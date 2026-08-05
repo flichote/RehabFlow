@@ -1,0 +1,38 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\zc_lizhiqian\projects\RehabFlow\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\zc_lizhiqian\projects\RehabFlow\backend
+plugins: anyio-4.12.1, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 28 items
+
+tests/test_auth.py::test_register_all_roles PASSED                       [  3%]
+tests/test_auth.py::test_register_duplicate_username_409 PASSED          [  7%]
+tests/test_auth.py::test_register_invalid_role_422 PASSED                [ 10%]
+tests/test_auth.py::test_login_and_me_returns_role PASSED                [ 14%]
+tests/test_auth.py::test_login_wrong_password_401 PASSED                 [ 17%]
+tests/test_auth.py::test_me_without_token_401 PASSED                     [ 21%]
+tests/test_auth.py::test_refresh_token_flow PASSED                       [ 25%]
+tests/test_auth.py::test_refresh_with_access_token_401 PASSED            [ 28%]
+tests/test_courses.py::test_course_state_machine_scheduled_ongoing_completed PASSED [ 32%]
+tests/test_courses.py::test_start_requires_scheduled_only PASSED         [ 35%]
+tests/test_courses.py::test_finish_requires_ongoing_only PASSED          [ 39%]
+tests/test_courses.py::test_patient_soft_checkin_treating_ward PASSED    [ 42%]
+tests/test_courses.py::test_status_logs_written PASSED                   [ 46%]
+tests/test_permissions.py::test_unauthenticated_protected_routes_401 PASSED [ 50%]
+tests/test_permissions.py::test_patient_access_admin_route_403 PASSED    [ 53%]
+tests/test_permissions.py::test_therapist_access_admin_route_403 PASSED  [ 57%]
+tests/test_permissions.py::test_doctor_access_admin_route_403 PASSED     [ 60%]
+tests/test_permissions.py::test_therapist_cannot_start_other_therapists_course_403 PASSED [ 64%]
+tests/test_permissions.py::test_own_therapist_can_start_200 PASSED       [ 67%]
+tests/test_permissions.py::test_admin_can_start_any_course_200 PASSED    [ 71%]
+tests/test_scheduling.py::test_create_course_no_conflict_201 PASSED      [ 75%]
+tests/test_scheduling.py::test_patient_conflict_same_time_409 PASSED     [ 78%]
+tests/test_scheduling.py::test_therapist_conflict_same_time_409 PASSED   [ 82%]
+tests/test_scheduling.py::test_patient_different_time_no_conflict_201 PASSED [ 85%]
+tests/test_scheduling.py::test_course_15min_granularity_422 PASSED       [ 89%]
+tests/test_scheduling.py::test_course_end_before_start_422 PASSED        [ 92%]
+tests/test_scheduling.py::test_create_course_requires_admin_403 PASSED   [ 96%]
+tests/test_smoke.py::test_full_chain_smoke PASSED                        [100%]
+
+============================= 28 passed in 18.26s =============================
