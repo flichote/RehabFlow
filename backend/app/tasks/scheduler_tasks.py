@@ -32,6 +32,7 @@ from app.models.models import (
 from app.services.alerts import create_course_overdue_alert
 from app.services.notifications import (
     send_course_end_reminder,
+    send_course_overdue_notification,
     send_course_reminder_notifications,
 )
 from app.services.tracking import remind_course
@@ -150,6 +151,17 @@ async def _overdue_detection():
             # 生成预警
             await create_course_overdue_alert(
                 db, course, patient, therapist.name
+            )
+
+            # 通知康复师（站内信）
+            await send_course_overdue_notification(
+                db,
+                therapist_user_id=therapist.user_id,
+                patient_name=patient.name,
+                therapist_name=therapist.name,
+                course_type=course.course_type,
+                start_time=course.start_at.isoformat(),
+                course_id=course.id,
             )
 
             # 课程状态 → abnormal
