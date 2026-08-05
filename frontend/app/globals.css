@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/*
+ * RehabFlow Design System — globals.css
+ * Token 唯一事实来源: docs/design/design-system.md
+ * Tailwind v4 CSS-first: 所有 token 写在 @theme 中，不建 tailwind.config.ts
+ * 视觉区分: 靛蓝主色（非 teal）
+ */
+
+@theme {
+  /* === 品牌主色 — 靛蓝 Indigo === */
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+  --color-primary-800: #3730A3;
+
+  /* === 课程类型三色 — 全局唯一语义映射 === */
+  --color-pt-50: #EFF6FF;
+  --color-pt-500: #3B82F6;   /* PT 物理治疗 — 蓝 */
+  --color-ot-50: #F0FDF4;
+  --color-ot-500: #22C55E;   /* OT 作业治疗 — 绿 */
+  --color-st-50: #FFF7ED;
+  --color-st-500: #F97316;   /* ST 言语治疗 — 橙 */
+
+  /* === 状态色 — 双状态机语义 === */
+  --color-success-500: #16A34A;  /* 正常/进行中/已完成 */
+  --color-warning-500: #F59E0B;  /* 待办/中等风险/需确认 */
+  --color-danger-500: #DC2626;   /* 错误/缺席/异常 */
+  --color-neutral-400: #94A3B8;  /* 等待/空闲/不可用 */
+
+  /* === 中性色 — Slate === */
+  --color-neutral-50: #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-500: #64748B;
+  --color-neutral-700: #334155;
+  --color-neutral-900: #0F172A;
+
+  /* === 字体 === */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  /* === 圆角 === */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* === 阴影 === */
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-pop: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+:root {
+  --background: var(--color-neutral-50);
+  --foreground: var(--color-neutral-900);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* 数字一律 tabular-nums（课表/看板对齐） */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
