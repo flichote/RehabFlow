@@ -128,3 +128,122 @@ export interface UpdateCoursePayload {
   room_id?: string;
   therapist_id?: string;
 }
+
+// === 看板类型 (docs/api.md §8) ===
+
+/** KPI 趋势方向 */
+export type TrendDirection = "up" | "down" | "flat";
+
+/** 看板 KPI */
+export interface DashboardKpis {
+  in_hospital_patients: number;
+  today_courses: number;
+  treating_count: number;
+  therapist_attendance_rate: number; // 0~1
+  patient_trend: TrendDirection;
+  course_trend: TrendDirection;
+  treating_trend: TrendDirection;
+  attendance_trend: TrendDirection;
+}
+
+/** 患者分布（环形图） */
+export interface PatientDistribution {
+  label: string;
+  value: number;
+  color: "pt" | "ot" | "st" | "neutral";
+}
+
+/** 治疗师今日课时（柱状图） */
+export interface TherapistWorkload {
+  therapist_id: string;
+  therapist_name: string;
+  course_count: number;
+  total_minutes: number;
+}
+
+/** 近 N 天课程总量（折线图） */
+export interface CourseTrend {
+  date: string;
+  label: string;
+  total: number;
+}
+
+/** 预警类型 */
+export type AlertType = "absent" | "overtime" | "conflict" | "abnormal" | "location";
+
+/** 预警条目 */
+export interface AlertItem {
+  id: string;
+  type: AlertType;
+  title: string;
+  summary: string;
+  created_at: string;
+  status: "open" | "resolved";
+  patient_name?: string;
+}
+
+// === 患者概览 360° 类型 (docs/api.md §2) ===
+
+/** 患者基本信息 */
+export interface PatientInfo {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  diagnosis: string;
+  admission_date: string;
+  attending_doctor: string;
+  primary_therapist: string;
+  bed_no: string;
+}
+
+/** 患者位置信息 */
+export interface PatientLocation {
+  current_location: string;
+  status: PatientStatus;
+  updated_at: string;
+}
+
+/** 课程计划时间轴条目 */
+export interface PlanTimelineItem {
+  course_id: string;
+  type: CourseType;
+  start_at: string;
+  end_at: string;
+  status: CourseStatus;
+  therapist_name: string;
+  room_name: string;
+}
+
+/** 周历每日统计 */
+export interface WeekCalendarDay {
+  date: string;
+  weekday: string;
+  courses: number;
+}
+
+/** 患者 360° 聚合 */
+export interface PatientOverview {
+  patient: PatientInfo;
+  location: PatientLocation;
+  plan_timeline: PlanTimelineItem[];
+  week_calendar: WeekCalendarDay[];
+}
+
+/** 评估记录 */
+export interface AssessmentRecord {
+  id: string;
+  type: string;
+  type_label: string;
+  score: number;
+  max_score: number;
+  assessed_at: string;
+  assessor: string;
+}
+
+/** 评估趋势数据 */
+export interface AssessmentTrend {
+  date: string;
+  fm_score: number;
+  bi_score: number;
+}

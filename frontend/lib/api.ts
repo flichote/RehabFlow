@@ -144,6 +144,21 @@ export type {
   ScheduleTimelineItem,
   CreateCoursePayload,
   UpdateCoursePayload,
+  // 看板类型
+  DashboardKpis,
+  PatientDistribution,
+  TherapistWorkload,
+  CourseTrend,
+  AlertType,
+  AlertItem,
+  // 患者概览类型
+  PatientInfo,
+  PatientLocation,
+  PlanTimelineItem,
+  WeekCalendarDay,
+  PatientOverview,
+  AssessmentRecord,
+  AssessmentTrend,
 } from "./types";
 
 // === Schedule API ===
@@ -195,4 +210,52 @@ export const courseApi = {
   //   api.get<{ overview: TodayOverview; timeline: ScheduleTimelineItem[] }>(
   //     `/therapist/schedule?date=${date}`
   //   ),
+};
+
+// === Dashboard API (docs/api.md §8) ===
+// TODO: 后端就绪后取消注释，切换到真实 API 调用
+
+export const dashboardApi = {
+  // GET /dashboard/kpis
+  // kpis: () => api.get<DashboardKpis>("/dashboard/kpis"),
+
+  // GET /dashboard/patient-distribution
+  // distribution: () =>
+  //   api.get<PatientDistribution[]>("/dashboard/patient-distribution"),
+
+  // GET /dashboard/therapist-workload?date=
+  // workload: (date: string) =>
+  //   api.get<TherapistWorkload[]>(`/dashboard/therapist-workload?date=${date}`),
+
+  // GET /dashboard/course-trend?days=7
+  // trend: (days: number) =>
+  //   api.get<CourseTrend[]>(`/dashboard/course-trend?days=${days}`),
+};
+
+// === Patient API (docs/api.md §2) ===
+// TODO: 后端就绪后取消注释，切换到真实 API 调用
+
+export const patientApi = {
+  // GET /patients/{id}/overview — 患者 360° 聚合
+  // overview: (id: string) =>
+  //   api.get<PatientOverview>(`/patients/${id}/overview`),
+
+  // GET /patients/{id}/assessments
+  // assessments: (id: string) =>
+  //   api.get<AssessmentRecord[]>(`/patients/${id}/assessments`),
+
+  // GET /patients/{id}/assessments/trend?type=FM
+  // assessmentTrend: (id: string, type: string) =>
+  //   api.get<AssessmentTrend[]>(
+  //     `/patients/${id}/assessments/trend?type=${type}`
+  //   ),
+};
+
+// === Alerts API (docs/api.md §7) ===
+// TODO: 后端就绪后取消注释，切换到真实 API 调用
+
+export const alertsApi = {
+  // GET /alerts?status=open
+  // list: (status?: string) =>
+  //   api.get<AlertItem[]>(`/alerts${status ? `?status=${status}` : ""}`),
 };
