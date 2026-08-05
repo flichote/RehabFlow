@@ -5,6 +5,8 @@ Hard constraint: zero HIS-related environment variables (architecture.md §9.4).
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,7 +20,18 @@ class Settings(BaseSettings):
     )
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./rehabflow.db"
+    # 默认 SQLite 用绝对路径（backend/rehabflow.db）：相对路径会随 cwd 变化，
+    # 导致 init_db（backend/ 下跑）与服务启动（其他 cwd）连到不同文件。
+    DATABASE_URL: str = ""
+
+    @property
+    def resolved_database_url(self) -> str:
+        """返回实际使用的 DATABASE_URL（未配置时用 backend/rehabflow.db 绝对路径）。"""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        backend_dir = Path(__file__).resolve().parent.parent.parent  # backend/
+        db_path = backend_dir / "rehabflow.db"
+        return f"sqlite+aiosqlite:///{db_path.as_posix()}"
 
     # JWT
     SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"

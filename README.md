@@ -41,18 +41,27 @@
 
 ## 快速开始（开发期）
 
-```bash
-# 后端（SQLite 零依赖起步）
-cd backend
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+> 需要：conda（Miniconda/Anaconda）+ Node.js ≥ 20。**一条命令搞定全部**：
 
-# 前端
-cd frontend
-npm install
-npm run dev
+```bash
+# 一键启动（自动：创建 conda 环境 rehabflow → 装依赖 → 初始化数据库 → 前后端并行）
+python start_dev.py
+
+# 常用参数
+python start_dev.py --no-seed       # 跳过种子数据（只要空表）
+python start_dev.py --no-frontend   # 只启动后端 API
+python start_dev.py --force-deps    # 强制重装依赖
 ```
+
+启动后自动输出：
+
+```
+✓ 后端 API:   http://127.0.0.1:8000   （API 文档: /docs）
+✓ 前端页面:   http://127.0.0.1:3000
+✓ 演示账号:   admin / admin123（管理员）
+```
+
+**环境说明**：conda 环境名为 `rehabflow`（Python 3.11），首次运行自动创建+装依赖（较慢），之后秒启动。数据库为 `backend/rehabflow.db`（SQLite），日志在 `logs/`。
 
 > 完整部署（PostgreSQL + Redis）见 `docs/ops/`（规划中）。
 
