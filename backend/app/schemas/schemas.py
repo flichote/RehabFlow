@@ -252,3 +252,133 @@ class AlertListResponse(BaseModel):
     """预警列表。"""
     total: int
     items: list[AlertResponse]
+
+
+# ── Dashboard (§8) ───────────────────────────────────────────────────
+
+
+class DashboardKpiResponse(BaseModel):
+    """主任看板 KPI 聚合。"""
+    inpatient_count: int  # ① 在院患者总数（status != discharged）
+    today_course_count: int  # ② 今日已排课程总数
+    treating_count: int  # ③ 当前治疗中人数（status=treating）
+    therapist_attendance_rate: float  # ④ 康复师今日出勤率 0.0-1.0
+
+
+class PatientDistributionItem(BaseModel):
+    """患者分布项。"""
+    location: str
+    count: int
+
+
+class PatientDistributionResponse(BaseModel):
+    """患者位置分布。"""
+    items: list[PatientDistributionItem]
+
+
+class TherapistWorkloadItem(BaseModel):
+    """康复师工作量项。"""
+    therapist_id: int
+    therapist_name: str
+    group_name: str
+    course_count: int
+
+
+class TherapistWorkloadResponse(BaseModel):
+    """康复师今日工作量。"""
+    date: str
+    items: list[TherapistWorkloadItem]
+
+
+class CourseTrendItem(BaseModel):
+    """课程趋势项。"""
+    date: str
+    count: int
+
+
+class CourseTrendResponse(BaseModel):
+    """课程趋势。"""
+    days: int
+    items: list[CourseTrendItem]
+
+
+# ── Patient 360° (§2) ────────────────────────────────────────────────
+
+
+class PatientOverviewResponse(BaseModel):
+    """患者 360° 聚合视图。"""
+    id: int
+    name: str
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    diagnosis: Optional[str] = None
+    admission_date: Optional[str] = None  # ISO date
+    ward_location: Optional[str] = None
+    status: str
+    doctor_name: Optional[str] = None
+    therapist_name: Optional[str] = None
+    # 当前位置（patient_status_log 最新一条）
+    current_location: Optional[str] = None
+    current_status: Optional[str] = None
+    # 康复计划时间轴（课程列表，按时间倒序）
+    courses: list["PatientCourseItem"] = []
+    # 本周课程分布（7天计数）
+    weekly_distribution: list[CourseTrendItem] = []
+
+
+class PatientCourseItem(BaseModel):
+    """患者 360° 中的课程摘要条目。"""
+    course_id: int
+    course_type: str
+    start_at: datetime
+    end_at: datetime
+    status: str
+    therapist_name: Optional[str] = None
+    room_name: Optional[str] = None
+
+
+# ── Assessments (§2) ──────────────────────────────────────────────────
+
+
+class AssessmentCreate(BaseModel):
+    """新增评估记录请求。"""
+    assess_type: str = Field(min_length=1, max_length=64)
+    score: Optional[float] = None
+    detail: Optional[dict] = None
+    assessed_at: datetime
+
+
+class AssessmentResponse(BaseModel):
+    """评估记录响应。"""
+    id: int
+    patient_id: int
+    template_id: Optional[int] = None
+    assess_type: str
+    score: Optional[float] = None
+    detail: Optional[dict] = None
+    assessor_id: Optional[int] = None
+    assessor_name: Optional[str] = None
+    assessed_at: datetime
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class AssessmentListResponse(BaseModel):
+    """评估记录列表。"""
+    total: int
+    items: list[AssessmentResponse]
+
+
+class AssessmentTrendItem(BaseModel):
+    """评估趋势数据点。"""
+    assessed_at: datetime
+    score: Optional[float] = None
+    assessor_name: Optional[str] = None
+
+
+class AssessmentTrendResponse(BaseModel):
+    """指定量表类型的历史评分序列。"""
+    patient_id: int
+    assess_type: str
+    items: list[AssessmentTrendItem]
