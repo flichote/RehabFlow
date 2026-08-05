@@ -1,0 +1,43 @@
+# === 环境与密钥 ===
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# === Node ===
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# === 数据库 / 数据 ===
+*.db
+*.sqlite
+pgdata*/
+pgdata-embedded/
+
+# === IDE / 系统 ===
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# === 日志 ===
+*.log
+logs/
