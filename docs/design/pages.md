@@ -4,7 +4,7 @@
 - 配套文档：`design-system.md`（设计 token）、`components.md`（页面级组件）
 - 技术基座：Next.js App Router，路由按角色分组 `(auth)` / `(patient)` / `(therapist)` / `(admin)` / `(doctor)`
 
-> 路由守卫规则：`middleware.ts` 校验 access token 与角色；未登录访问受保护路由 → 跳 `/login`；角色不匹配 → 跳 `/403` 或对应角色首页。
+> 路由守卫规则：`proxy.ts`（Next.js 16 中 middleware 的正式名称）校验 access token 与角色；未登录访问受保护路由 → 跳 `/login`；角色不匹配 → 跳 `/403` 或对应角色首页。
 
 ---
 

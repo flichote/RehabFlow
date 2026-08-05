@@ -167,14 +167,13 @@ POST /api/v1/courses  （创建课程）
 
 | 层 | 选型 | 备注 |
 | :--- | :--- | :--- |
-| 前端框架 | Next.js（App Router）+ TypeScript | 路由按角色分组 |
-| UI | Tailwind CSS + shadcn/ui 风格 | token 见 design-system.md |
-| 状态管理 | TanStack Query（服务端状态）+ 轻量全局态 | 排课日历数据密集 |
+| 前端框架 | Next.js 16.2.9（App Router）+ TypeScript | 路由按角色分组；middleware 正式名 `proxy.ts` |
+| UI | Tailwind CSS **v4**（CSS-first）+ shadcn/ui | token 见 design-system.md，写在 `@theme` |
+| 状态管理 | TanStack Query v5（服务端状态）+ 轻量全局态 | 排课日历数据密集 |
 | 图表 | recharts（候选） | 看板图表族 |
-| 后端 | FastAPI + SQLAlchemy 2.x + Pydantic v2 | — |
-| 迁移 | Alembic | — |
-| 数据库 | PostgreSQL 16（开发可 SQLite） | — |
-| 缓存 | Redis | 排课缓存写穿 |
+| 后端 | FastAPI（Pydantic v2）+ SQLAlchemy 2.x async + Alembic | — |
+| 数据库 | **SQLite（aiosqlite）起步 → PostgreSQL 16（asyncpg）** | 切换只改 `DATABASE_URL`（见 tech-stack.md §3） |
+| 缓存 | Redis | 排课缓存写穿（生产期） |
 | 定时任务 | APScheduler（进程内，单实例部署约束） | 课前提醒/巡检 |
 | 认证 | JWT（access + refresh） | — |
 | 部署 | Docker Compose | — |

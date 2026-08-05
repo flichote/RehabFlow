@@ -31,11 +31,13 @@
 
 | 层 | 选型 |
 | :--- | :--- |
-| 前端 | Next.js (App Router) + Tailwind CSS + shadcn/ui 风格 |
-| 后端 | FastAPI + SQLAlchemy + Pydantic |
-| 数据库 | PostgreSQL 16（开发期可切 SQLite 零依赖跑通） |
-| 缓存 | Redis（排课缓存，写穿策略） |
+| 前端 | Next.js 16.2.9 (App Router) + Tailwind CSS **v4** + shadcn/ui + TanStack Query v5 |
+| 后端 | FastAPI（Pydantic v2）+ SQLAlchemy 2.x（async） |
+| 数据库 | **SQLite 起步（aiosqlite）→ 业务增长后切 PostgreSQL 16（asyncpg）** |
+| 缓存 | Redis（排课缓存，写穿策略，生产期） |
 | 部署 | Docker Compose |
+
+> 版本已通过 context7 MCP 核实（详见 `docs/tech-stack.md`）；开发期 SQLite 零依赖跑通，切换 PG 只改 `DATABASE_URL`。
 
 ## 快速开始（开发期）
 
@@ -57,6 +59,7 @@ npm run dev
 ## 文档索引
 
 - `docs/PRD.md` — 产品需求文档（完整版）
+- `docs/tech-stack.md` — **技术选型**（context7 核实的最新版本 + SQLite→PG 策略）
 - `docs/architecture.md` — **系统架构**（分层/模块/关键机制/部署）
 - `docs/database.md` — **数据模型**（15 张核心表，字段级）
 - `docs/api.md` — **API 接口大纲**（REST 端点 + 权限标注）

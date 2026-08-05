@@ -136,10 +136,9 @@ frontend/
 │   ├── permissions.ts            # 前端角色/权限工具
 │   └── format.ts                 # 时间格式化（15min 粒度辅助）
 ├── hooks/                        # useSchedule / useCourses / useDashboard...
-├── middleware.ts                 # 路由守卫（token + 角色）
+├── proxy.ts                      # 路由守卫（Next.js 16 的 middleware，token + 角色）
 ├── package.json
-├── tsconfig.json
-└── tailwind.config.ts            # token 映射（靛蓝主色）
+└── tsconfig.json
 ```
 
 ---
@@ -157,5 +156,5 @@ frontend/
 ## 5. 规范约定
 
 1. **后端**：类型标注完整；service 层返回业务异常（409 冲突带明细）；禁止裸 `db.query` 绕过权限 scope。
-2. **前端**：组件只引用 token 不硬编码色值；页面数据用 TanStack Query；`middleware.ts` 统一守卫。
+2. **前端**：组件只引用 token 不硬编码色值；页面数据用 TanStack Query；`proxy.ts`（Next.js 16 middleware 正式名）统一守卫；Tailwind v4 CSS-first（token 在 globals.css `@theme`，无 tailwind.config）。
 3. **测试**：后端 pytest 从 M1 起并行（冲突检测是重点）；前端组件测试（可选，M2+）。
