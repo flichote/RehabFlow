@@ -21,7 +21,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.models import Course
+from app.models.models import Course, Patient, Room, Therapist
+from app.services.notifications import send_course_new_notifications
 
 # Application-level lock for SQLite conflict detection serialization.
 # On PostgreSQL, the FOR UPDATE clause handles this at the DB level.
@@ -169,4 +170,31 @@ async def create_course(
         db.add(course)
         await db.commit()
         await db.refresh(course)
-        return course
+
+    # ── Send course_new notifications (outside the scheduling lock) ──
+    patient = (
+        await db.execute(select(Patient).where(Patient.id == patient_id))
+    ).scalar_one_or_none()
+    therapist = (
+        await db.execute(select(Therapist).where(Therapist.id == therapist_id))
+    ).scalar_one_or_none()
+    room = (
+        await db.execute(select(Room).where(Room.id == room_id))
+    ).scalar_one_or_none()
+
+    if patient and therapist:
+        await send_course_new_notifications(
+            db,
+            patient_user_id=patient.user_id,
+            therapist_user_id=therapist.user_id,
+            patient_name=patient.name,
+            therapist_name=therapist.name,
+            course_type=course_type,
+            start_time=start_at.isoformat(),
+            end_time=end_at.isoformat(),
+            room_name=room.name if room else "Unknown",
+            course_id=course.id,
+        )
+        await db.commit()
+
+    return course

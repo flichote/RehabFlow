@@ -120,7 +120,7 @@ async def create_notification(
 async def send_course_new_notifications(
     db: AsyncSession,
     *,
-    patient_user_id: int,
+    patient_user_id: int | None,
     therapist_user_id: int,
     patient_name: str,
     therapist_name: str,
@@ -139,13 +139,14 @@ async def send_course_new_notifications(
         "end_time": end_time,
         "room_name": room_name,
     }
-    await create_notification(
-        db,
-        user_id=patient_user_id,
-        type="course_new",
-        ctx=ctx,
-        link=f"/courses/{course_id}",
-    )
+    if patient_user_id:
+        await create_notification(
+            db,
+            user_id=patient_user_id,
+            type="course_new",
+            ctx=ctx,
+            link=f"/courses/{course_id}",
+        )
     await create_notification(
         db,
         user_id=therapist_user_id,

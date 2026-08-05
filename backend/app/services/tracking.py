@@ -95,10 +95,10 @@ async def start_course(
     - patient.status = "treating", patient location = room name
     - Logs written to course_status_log and patient_status_log.
     """
-    if course.status != "scheduled":
+    if course.status not in ("scheduled", "reminded"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot start course in '{course.status}' status. Expected 'scheduled'.",
+            detail=f"Cannot start course in '{course.status}' status. Expected 'scheduled' or 'reminded'.",
         )
 
     patient = (
