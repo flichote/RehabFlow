@@ -29,9 +29,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode = data.copy()
     now = datetime.now(timezone.utc)
     expire = now + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
-    # iat 必须存在：没有 iat 时同一秒内生成的 token 完全相同，
-    # refresh 轮换会撞 refresh_tokens.token_hash 的 UNIQUE 约束
-    to_encode.update({"iat": now, "exp": expire, "type": "access"})
+    # jti（uuid4）保证每次签发唯一：同秒内两次签发（login+refresh 同秒）
+    # 若无随机成分会生成相同 token。refresh token 存库有 UNIQUE 约束，
+    # access token 虽不存库，统一加 jti 避免任何依赖 token 唯一性的问题。
+    to_encode.update({"iat": now, "exp": expire, "type": "access", "jti": uuid4().hex})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
