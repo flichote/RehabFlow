@@ -15,6 +15,7 @@ No other code may change course.status or patient.status directly.
 
 from datetime import datetime, timezone
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,9 +27,20 @@ from app.models.models import (
     Room,
 )
 
-
 def _now() -> datetime:
+    """当前时间（UTC aware）。
+
+    存储约定：schema 层把输入统一转 UTC，SQLite 存的 naive 墙钟即 UTC 语义；
+    这里写入的 UTC aware 时间与其一致（PG 的 TIMESTAMPTZ 同理）。
+    """
     return datetime.now(timezone.utc)
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """归一化为 timezone-aware UTC（naive 按 UTC 补，见存储约定）。"""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 async def _log_course_status(
@@ -84,9 +96,9 @@ async def start_course(
     - Logs written to course_status_log and patient_status_log.
     """
     if course.status != "scheduled":
-        raise ValueError(
-            f"Cannot start course in '{course.status}' status. "
-            f"Expected 'scheduled'."
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot start course in '{course.status}' status. Expected 'scheduled'.",
         )
 
     patient = (
@@ -124,9 +136,9 @@ async def finish_course(
     - Logs written to course_status_log and patient_status_log.
     """
     if course.status != "ongoing":
-        raise ValueError(
-            f"Cannot finish course in '{course.status}' status. "
-            f"Expected 'ongoing'."
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot finish course in '{course.status}' status. Expected 'ongoing'.",
         )
 
     patient = (
@@ -135,9 +147,9 @@ async def finish_course(
 
     now = _now()
 
-    # Calculate minutes consumed
+    # Calculate minutes consumed（时区统一：_as_utc 归一化 naive 墙钟与 aware）
     if course.actual_start_at:
-        delta = now - course.actual_start_at
+        delta = _as_utc(now) - _as_utc(course.actual_start_at)
         course.minutes_consumed = max(1, int(delta.total_seconds() / 60))
 
     # Transition

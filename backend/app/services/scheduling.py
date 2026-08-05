@@ -15,13 +15,12 @@ No conflict:         201 with created course.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.models.models import Course
 
 # Application-level lock for SQLite conflict detection serialization.
@@ -34,21 +33,16 @@ _scheduling_lock = asyncio.Lock()
 # Active course statuses — courses in these states conflict with new courses
 _ACTIVE_STATUSES = ("scheduled", "reminded", "ongoing")
 
-# 应用本地时区（默认 +08:00，见 config.APP_TZ_OFFSET_HOURS）
-_APP_TZ = timezone(timedelta(hours=settings.APP_TZ_OFFSET_HOURS))
-
 
 def _as_utc(dt: datetime) -> datetime:
     """Normalize a datetime to timezone-aware UTC for comparison.
 
-    - Request datetimes arrive offset-aware (+08:00 etc.) → convert to UTC.
-    - SQLite returns naive datetimes (DateTime(timezone=True) drops the offset,
-      storing the local wall-clock). Treat naive as APP_TZ (local wall clock),
-      then convert to UTC — this keeps SQLite (dev) and PG16 (prod) consistent,
-      since PG's TIMESTAMPTZ returns aware datetimes already.
+    Storage convention: the schema layer converts all inputs to UTC before
+    insert, so SQLite's naive wall-clock values are UTC semantics. Naive
+    datetimes read back from SQLite are therefore treated as UTC.
     """
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=_APP_TZ)
+        dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
 

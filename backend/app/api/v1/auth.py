@@ -13,6 +13,7 @@ from app.core.security import (
     create_refresh_token,
     decode_token,
     hash_password,
+    hash_token,
     rotate_refresh_token,
     store_refresh_token,
 )
