@@ -202,3 +202,53 @@ class ScheduleResponse(BaseModel):
     overview: ScheduleOverview
     items: list[ScheduleCourseItem]
     free_slots: list[FreeSlot]
+
+
+# ── Notifications (§5) ────────────────────────────────────────────
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    type: str
+    title: str
+    content: str
+    link: Optional[str] = None
+    is_read: bool
+    channel: str
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class NotificationListResponse(BaseModel):
+    """通知列表（分页，未读优先）。"""
+    total: int
+    unread_count: int
+    items: list[NotificationResponse]
+
+
+class UnreadCountResponse(BaseModel):
+    unread_count: int
+
+
+# ── Alerts (§6) ───────────────────────────────────────────────────
+
+
+class AlertResponse(BaseModel):
+    id: int
+    alert_type: str
+    ref_course_id: Optional[int] = None
+    ref_patient_id: Optional[int] = None
+    summary: str
+    status: str
+    resolved_by: Optional[int] = None
+    resolved_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class AlertListResponse(BaseModel):
+    """预警列表。"""
+    total: int
+    items: list[AlertResponse]

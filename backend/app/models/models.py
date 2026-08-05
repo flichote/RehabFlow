@@ -65,7 +65,8 @@ SHIFT_STATUS = ("scheduled", "on_duty", "absent", "leave")
 
 # 通知类型 / 通道（§2.12）
 NOTIFICATION_TYPE = (
-    "course_new", "course_change", "course_reminder", "course_overdue",
+    "course_new", "course_change", "course_reminder", "course_reminder_therapist",
+    "course_overdue", "course_end_reminder",
     "assessment_todo", "alert",
 )
 NOTIFICATION_CHANNEL = ("inbox", "browser", "sms")
@@ -449,7 +450,7 @@ class Notification(TimestampMixin, Base):
     __table_args__ = (
         Index("idx_notifications_user", "user_id", "is_read", text("created_at DESC")),
         CheckConstraint(
-            "type IN ('course_new','course_change','course_reminder','course_overdue','assessment_todo','alert')",
+            "type IN ('course_new','course_change','course_reminder','course_reminder_therapist','course_overdue','course_end_reminder','assessment_todo','alert')",
             name="ck_notifications_type",
         ),
         CheckConstraint("channel IN ('inbox','browser','sms')", name="ck_notifications_channel"),

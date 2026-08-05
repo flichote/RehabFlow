@@ -20,7 +20,7 @@ from app.schemas.schemas import (
     ScheduleResponse,
 )
 from app.services.scheduling import _as_utc, create_course
-from app.services.tracking import finish_course, start_course
+from app.services.tracking import finish_course, remind_course, start_course
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -216,6 +216,48 @@ async def finish_course_endpoint(
         tp = await _get_therapist(db, current_user)
         _check_therapist_access(course, tp)
     await finish_course(db, course, current_user.id)
+    await db.refresh(course)
+    return course
+
+
+@router.post("/{course_id}/remind", response_model=CourseResponse)
+async def remind_course_endpoint(
+    course_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_role("therapist", "admin"))],
+):
+    """一键提醒：立即向患者+康复师推送上课提醒（therapist or admin）。
+
+    写入 notifications 表，课程状态 → reminded，患者状态 → en_route。
+    """
+    course = await _get_course(db, course_id)
+    if current_user.role == "therapist":
+        tp = await _get_therapist(db, current_user)
+        _check_therapist_access(course, tp)
+
+    from app.services.notifications import send_course_reminder_notifications
+
+    patient = (
+        await db.execute(select(Patient).where(Patient.id == course.patient_id))
+    ).scalar_one_or_none()
+    therapist = (
+        await db.execute(select(Therapist).where(Therapist.id == course.therapist_id))
+    ).scalar_one_or_none()
+
+    await send_course_reminder_notifications(
+        db,
+        patient_user_id=patient.user_id if patient else None,
+        therapist_user_id=therapist.user_id if therapist else 0,
+        patient_name=patient.name if patient else "Unknown",
+        therapist_name=therapist.name if therapist else "Unknown",
+        course_type=course.course_type,
+        start_time=course.start_at.isoformat(),
+        room_name=course.room.name if course.room else "Unknown",
+        course_id=course.id,
+    )
+
+    await remind_course(db, course, actor_id=current_user.id)
+    await db.commit()
     await db.refresh(course)
     return course
 

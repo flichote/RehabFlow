@@ -167,3 +167,51 @@ async def finish_course(
     patient.status = "ward"
 
     await db.commit()
+
+
+async def remind_course(
+    db: AsyncSession,
+    course: Course,
+    actor_id: int | None = None,
+) -> None:
+    """Send pre-class reminder (15 min before start).
+
+    Side effects:
+    - course.status = "reminded" (from "scheduled")
+    - patient.status = "en_route"
+    - Logs written to course_status_log and patient_status_log.
+
+    Idempotent: does nothing if course is not in "scheduled" status.
+    Only transitions courses that haven't been reminded yet (checks
+    course_status_log for an existing "reminded" entry).
+    """
+    if course.status not in ("scheduled",):
+        return
+
+    # Idempotency: check if already reminded (via course_status_log)
+    from sqlalchemy import exists as _exists
+
+    already = await db.execute(
+        select(_exists().where(
+            CourseStatusLog.course_id == course.id,
+            CourseStatusLog.to_status == "reminded",
+        ))
+    )
+    if already.scalar_one():
+        return
+
+    patient = (
+        await db.execute(select(Patient).where(Patient.id == course.patient_id))
+    ).scalar_one()
+
+    # Transition course
+    await _log_course_status(db, course, "reminded", actor_id=actor_id)
+    course.status = "reminded"
+
+    # Transition patient → en_route
+    await _log_patient_status(
+        db, patient, "en_route", location=None, actor_id=actor_id, source="system"
+    )
+    patient.status = "en_route"
+
+    await db.commit()
