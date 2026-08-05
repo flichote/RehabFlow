@@ -67,6 +67,7 @@
 | doctor_id | BIGINT | FK→doctors, NULL | 主管医生 |
 | therapist_id | BIGINT | FK→therapists, NULL | 责任康复师 |
 | status | VARCHAR(20) | NOT NULL DEFAULT 'ward' | 患者状态枚举（见下） |
+| external_patient_no | VARCHAR(64) | NULL | **HIS 患者号（备用冗余，不参与业务逻辑）**：仅作将来 CSV 导入对账参考；RehabFlow 一切业务以本表 id 为准（见 architecture §9.4） |
 | created_at | TIMESTAMPTZ | DEFAULT now() | |
 
 **患者状态枚举**：`ward`(病房) / `en_route`(前往途中) / `treating`(治疗中) / `paused`(临时暂停) / `absent`(旷课缺席) / `discharged`(出院)。

@@ -11,6 +11,8 @@
 | `monitoring.md` | 日志、健康检查、告警监控方案 | M3 |
 | `env.md` | 环境变量清单（含敏感项说明） | M1 后 |
 
+> ⚠️ **HIS 隔离纪律**：环境变量清单中**禁止出现**任何 HIS 相关配置项（如 `HIS_API_URL`、HIS 连接串）。RehabFlow 与医院 HIS 完全独立（见 `docs/architecture.md` §9）。
+
 ## 技术栈部署基线
 
 - 前端：Next.js（静态导出或 Node 服务）
