@@ -147,7 +147,7 @@ frontend/
 
 | 阶段 | 后端 | 前端 |
 | :--- | :--- | :--- |
-| **M1 地基** | core/ + db/ + models（3 核心表）+ services/scheduling 冲突检测 + auth | 骨架 + token 落地 + login/register |
+| **M1 地基** | core/ + db/ + models（15 表全量，见 database.md）+ services/scheduling 冲突检测 + auth | 骨架 + token 落地 + login/register |
 | **M2 闭环** | courses/tracking/notifications/tasks 全量 | schedule 页 + scheduler 页（排课日历）+ 状态徽章 |
 | **M3 决策** | dashboard/alerts/assessments | 患者 360° + 主任看板 + alerts 页 |
 
