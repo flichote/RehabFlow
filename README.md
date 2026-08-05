@@ -56,6 +56,10 @@ npm run dev
 ## 文档索引
 
 - `docs/PRD.md` — 产品需求文档（完整版）
+- `docs/architecture.md` — **系统架构**（分层/模块/关键机制/部署）
+- `docs/database.md` — **数据模型**（15 张核心表，字段级）
+- `docs/api.md` — **API 接口大纲**（REST 端点 + 权限标注）
+- `docs/structure.md` — **目录结构规划**（前后端骨架蓝图）
 - `docs/design/design-system.md` — 设计系统（视觉 token）
 - `docs/design/pages.md` — 页面结构与信息架构
 - `docs/design/components.md` — 页面级组件规范
