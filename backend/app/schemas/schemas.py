@@ -99,3 +99,106 @@ class CourseResponse(BaseModel):
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# ── Course list query ──────────────────────────────────────────────
+
+
+class CourseListResponse(BaseModel):
+    """课程列表响应：包含分页信息与 items 列表。"""
+    total: int
+    items: list[CourseResponse]
+
+
+class CourseDetailResponse(CourseResponse):
+    """课程详情：包含关联名称。"""
+    patient_name: str = ""
+    therapist_name: str = ""
+    room_name: str = ""
+
+
+# ── Scheduler resources ───────────────────────────────────────────
+
+
+class TherapistInfo(BaseModel):
+    id: int
+    name: str
+    group_name: str  # PT/OT/ST
+    title: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class RoomInfo(BaseModel):
+    id: int
+    name: str
+    room_type: str  # PT/OT/ST
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class ResourceTreeResponse(BaseModel):
+    """排课页资源树。"""
+    therapists: dict[str, list[TherapistInfo]]  # {"PT": [...], "OT": [...], "ST": [...]}
+    rooms: list[RoomInfo]
+
+
+# ── Scheduler pool ─────────────────────────────────────────────────
+
+
+class PatientPoolItem(BaseModel):
+    id: int
+    name: str
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    diagnosis: Optional[str] = None
+    ward_location: Optional[str] = None
+    doctor_name: Optional[str] = None
+    therapist_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PoolResponse(BaseModel):
+    """待排患者池。"""
+    date: str  # ISO date
+    total: int
+    items: list[PatientPoolItem]
+
+
+# ── Therapist schedule ─────────────────────────────────────────────
+
+
+class ScheduleCourseItem(BaseModel):
+    """课表时间线中的课程条目。"""
+    course_id: int
+    start_at: datetime
+    end_at: datetime
+    patient_name: str
+    course_type: str
+    room_name: str
+    status: str
+    actual_start_at: Optional[datetime] = None
+    actual_end_at: Optional[datetime] = None
+
+
+class FreeSlot(BaseModel):
+    """两个课程之间的空闲时段。"""
+    start: datetime
+    end: datetime
+    minutes: int
+
+
+class ScheduleOverview(BaseModel):
+    total: int
+    completed: int
+    remaining: int
+
+
+class ScheduleResponse(BaseModel):
+    """康复师课表聚合。"""
+    date: str
+    overview: ScheduleOverview
+    items: list[ScheduleCourseItem]
+    free_slots: list[FreeSlot]
