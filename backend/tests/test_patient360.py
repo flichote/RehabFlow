@@ -405,3 +405,124 @@ def test_doctor_accesses_assessments_200(client):
 
     r = client.get(f"/api/v1/patients/{pid}/assessments", headers=H_dr)
     assert r.status_code == 200
+
+
+# ── M3 软打卡：overview 当前位置/状态随开始/结束流转 ─────────────────────
+
+def test_overview_location_treating_after_start(client, actor_set):
+    """软打卡：开始上课后 overview 当前位置=治疗室、状态=治疗中（PRD §3.3 实时位置卡）。"""
+    H_admin, H_ther, pid, tid, rid = actor_set
+
+    start = make_time(day_offset=100, hour=9)
+    end = make_time(day_offset=100, hour=9, minute=45)
+    r = client.post(
+        "/api/v1/courses",
+        json=course_body(pid, tid, rid, start, end),
+        headers=H_admin,
+    )
+    assert r.status_code == 201, r.text
+    cid = r.json()["id"]
+
+    r = client.post(f"/api/v1/courses/{cid}/start", headers=H_ther)
+    assert r.status_code == 200, r.text
+
+    body = client.get(f"/api/v1/patients/{pid}/overview", headers=H_admin).json()
+    assert body["current_status"] == "treating", body
+    assert body["current_location"] == "PT大厅", body
+
+
+def test_overview_location_ward_after_finish(client, actor_set):
+    """软打卡：结束上课后 overview 当前位置=病房(ward_location)、状态=在病房（flows.md 速查表）。"""
+    import asyncio as _aio
+
+    from sqlalchemy import update as _update
+
+    from app.db.session import SessionLocal as _SL
+    from app.models.models import Patient as _Patient
+
+    H_admin, H_ther, pid, tid, rid = actor_set
+
+    async def _set_ward():
+        async with _SL() as s:
+            await s.execute(
+                _update(_Patient).where(_Patient.id == pid).values(ward_location="住院部3楼5床")
+            )
+            await s.commit()
+
+    _aio.run(_set_ward())
+
+    start = make_time(day_offset=110, hour=9)
+    end = make_time(day_offset=110, hour=9, minute=45)
+    r = client.post(
+        "/api/v1/courses",
+        json=course_body(pid, tid, rid, start, end),
+        headers=H_admin,
+    )
+    assert r.status_code == 201, r.text
+    cid = r.json()["id"]
+
+    assert client.post(f"/api/v1/courses/{cid}/start", headers=H_ther).status_code == 200
+    assert client.post(f"/api/v1/courses/{cid}/finish", headers=H_ther).status_code == 200
+
+    body = client.get(f"/api/v1/patients/{pid}/overview", headers=H_admin).json()
+    assert body["current_status"] == "ward", body
+    assert body["current_location"] == "住院部3楼5床", body
+
+
+# ── M3 权限：患者 403 / 非责任康复师 404（三角色覆盖） ────────────────────
+
+def test_patient_cannot_access_overview_403(client):
+    """患者角色访问 overview → 403（require_role doctor/therapist/admin）。"""
+    pid = _get_seed_patient_id()
+    tok, _, _ = register_and_login(client, "patient")
+    H = auth_headers(tok)
+
+    r = client.get(f"/api/v1/patients/{pid}/overview", headers=H)
+    assert r.status_code == 403, r.text
+
+
+def test_therapist_cannot_see_unassigned_patient_404(client, actor_set):
+    """数据权限：非责任康复师查看患者 overview → 404（架构 §4.4 行级隔离）。"""
+    _, _, pid, _, _ = actor_set
+    tok, _, _ = register_and_login(client, "therapist")
+    H_other = auth_headers(tok)
+
+    r = client.get(f"/api/v1/patients/{pid}/overview", headers=H_other)
+    assert r.status_code == 404, r.text
+
+
+def test_unassigned_therapist_cannot_create_assessment_404(client, actor_set):
+    """数据权限：非责任康复师创建评估 → 404。"""
+    _, _, pid, _, _ = actor_set
+    tok, _, _ = register_and_login(client, "therapist")
+    H_other = auth_headers(tok)
+
+    body = {
+        "assess_type": "Fugl-Meyer",
+        "score": 40,
+        "assessed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    r = client.post(
+        f"/api/v1/patients/{pid}/assessments", json=body, headers=H_other
+    )
+    assert r.status_code == 404, r.text
+
+
+def test_assessment_update_delete_not_implemented(client, actor_set):
+    """API 面核查：评估记录无 PUT/DELETE 路由。
+
+    任务体写「评估 CRUD」，但 api.md §2 与实现均只有 list/create/trend；
+    PUT/DELETE 返回 404（路由不存在）→ 记为 ⚪ 疑问，建议与 rf-arch 确认。
+    """
+    H_admin, _, pid, _, _ = actor_set
+
+    r_put = client.put(
+        f"/api/v1/patients/{pid}/assessments/1",
+        json={"score": 99},
+        headers=H_admin,
+    )
+    r_del = client.delete(
+        f"/api/v1/patients/{pid}/assessments/1", headers=H_admin
+    )
+    assert r_put.status_code == 404, r_put.text
+    assert r_del.status_code == 404, r_del.text

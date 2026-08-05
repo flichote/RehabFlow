@@ -481,3 +481,270 @@
 | BUG-8 | 🔴 阻塞 | `app/services/tracking.py:start_course` 仅允许 `scheduled`（第 98 行） | T-NOT-06 后续步骤（reminded→start） | flows.md 速查表 + api.md §10：提醒发出(reminded) → 开始上课(ongoing) |
 
 > 详细复现步骤与修复建议见 `docs/qa/test-report-m2.md` §3 缺陷清单。
+---
+
+## 16. M3 主任看板 KPI（dashboard/kpis）
+
+> 验收依据：PRD §3.4（4 张 KPI 卡）+ api.md §8 + flows.md 流程6（实时 30s 轮询）。
+> 测试库为 session 级共享，精确数值断言一律用「基线差值」防跨用例污染。
+
+### T-KPI-01 KPI 返回 4 字段结构
+- 前置：管理员登录
+- 步骤：GET /api/v1/dashboard/kpis
+- 预期：200；含 inpatient_count / today_course_count / treating_count / therapist_attendance_rate，前三者为 int，出勤率 ∈ [0,1]
+- 结果：✅ 通过（test_kpis_structure）
+
+### T-KPI-02 造数验证：KPI 精确差值（在院+1 / 今日课程+1 / 治疗中+1）
+- 前置：管理员+康复师登录（actor_set）；KPI 基线 k0
+- 步骤：① 注册新患者 → k1；② 今日排课 → k2；③ 开始上课 → k3
+- 预期：k1.inpatient_count == k0+1（注册即建 Patient 档案，status=ward 未出院）；k2.today_course_count == k1+1；k3.treating_count == k2+1
+- 结果：✅ 通过（test_kpis_exact_deltas_after_create_and_start）
+
+### T-KPI-03 造数验证：出勤率精确值（1 on_duty + 1 scheduled → 0.5）
+- 前置：管理员登录；uk_shifts (therapist_id, work_date) 唯一，同一康复师同日只能 1 条排班 → 用两个康复师各 1 条
+- 步骤：DB 直插 2 条今日排班（on_duty / scheduled）→ GET /dashboard/kpis
+- 预期：therapist_attendance_rate == 0.5（全局：on_duty / (on_duty+scheduled)）
+- 结果：✅ 通过（test_kpis_attendance_rate_exact_with_shifts）
+
+### T-KPI-04 开始上课 → treating_count ≥1
+- 前置：actor_set
+- 步骤：排课 → 开始 → 查 KPI
+- 预期：treating_count >= 1（患者进入治疗中）
+- 结果：✅ 通过（test_kpis_treating_count_after_start）
+
+## 17. M3 患者分布（dashboard/patient-distribution）
+
+### T-DIST-01 分布返回 {location, count} 结构
+- 前置：管理员登录
+- 步骤：GET /api/v1/dashboard/patient-distribution
+- 预期：200；items 为列表，元素含 location/count
+- 结果：✅ 通过（test_distribution_structure）
+
+### T-DIST-02 种子患者位于病房分组
+- 前置：种子库（陈明/刘芳/周涛 均有 ward 初始日志）
+- 步骤：同上查询
+- 预期：分组中存在 住院部* 病房位置（种子 3 人初始 location=ward_location）
+- 结果：✅ 通过（test_distribution_seed_patients_ward）
+
+### T-DIST-03 造数验证：开始上课后分组 +1（PT大厅）
+- 前置：actor_set（注册患者无状态日志）
+- 步骤：基线分布 → 排课+开始上课 → 再查分布
+- 预期：PT大厅 计数 == 基线 +1（患者最新日志位置=治疗室，PRD §3.4 环形图数据源）
+- 结果：✅ 通过（test_distribution_location_updates_after_start）
+
+## 18. M3 工作量（dashboard/therapist-workload）
+
+### T-WORK-01 工作量返回结构（date + items）
+- 前置：管理员登录
+- 步骤：GET /api/v1/dashboard/therapist-workload?date=今日
+- 预期：200；date 回显、items 含 therapist_id/therapist_name/group_name/course_count
+- 结果：✅ 通过（test_workload_structure）
+
+### T-WORK-02 排课后工作量包含该康复师
+- 前置：actor_set
+- 步骤：为某康复师在目标日排课 → 查该日 workload
+- 预期：items 含该 therapist_id（柱状图数据源，PRD §3.4 中间）
+- 结果：✅ 通过（test_workload_with_courses）
+
+### T-WORK-03 造数验证：同日两节课 → course_count == 2
+- 前置：actor_set + 第二个患者（避免同患者冲突）
+- 步骤：同一康复师同日排 2 节课（09:00 与 10:00）→ 查 workload
+- 预期：该康复师 course_count == 2（精确计数）
+- 结果：✅ 通过（test_workload_exact_count_two_courses）
+
+## 19. M3 课程趋势（dashboard/course-trend）
+
+### T-TREND-01 trend 返回 7 天结构
+- 前置：管理员登录
+- 步骤：GET /api/v1/dashboard/course-trend?days=7
+- 预期：200；days == 7、items 长度 7、元素含 date/count(int)
+- 结果：✅ 通过（test_trend_structure）
+
+### T-TREND-02 无课日期补 0
+- 前置：管理员登录
+- 步骤：GET /api/v1/dashboard/course-trend?days=3
+- 预期：200；长度 3，每项 count >= 0（SQL group_by + Python 补零）
+- 结果：✅ 通过（test_trend_fills_zero_for_empty_days）
+
+### T-TREND-03 造数验证：今日排课 → 今日计数 +1、升序、7 天完整
+- 前置：actor_set
+- 步骤：基线 trend → 今日排课 → 再查 trend
+- 预期：len==7、日期升序、今日计数 == 基线+1（折线图数据源）
+- 结果：✅ 通过（test_trend_includes_today_and_7_days）
+
+## 20. M3 患者 360° 聚合（patients/{id}/overview）
+
+> 验收依据：PRD §3.3（基本信息 + 实时位置卡 + 计划时间轴 + 本周课程一览）+ api.md §2。
+
+### T-360-01 overview 结构：基本信息 + 当前位置 + 时间轴 + 周分布
+- 前置：管理员登录；种子患者陈明
+- 步骤：GET /api/v1/patients/{pid}/overview
+- 预期：200；含 id/name/status/ward_location/doctor_name/therapist_name、current_location/current_status、courses 列表、weekly_distribution 长度 7
+- 结果：✅ 通过（test_overview_structure）
+
+### T-360-02 当前位置来自最新 patient_status_log
+- 前置：种子患者（初始 ward 日志）
+- 步骤：同上查询
+- 预期：current_location 非空、current_status == ward
+- 结果：✅ 通过（test_overview_current_location_from_status_log）
+
+### T-360-03 排课后课程进入时间轴
+- 前置：actor_set
+- 步骤：排课 → 查 overview
+- 预期：courses 含该 course_id（计划时间轴，PRD §3.3）
+- 结果：✅ 通过（test_overview_includes_courses）
+
+### T-360-04 周分布 7 天且计数合法
+- 前置：actor_set
+- 步骤：同上查询
+- 预期：weekly_distribution 长度 7，含 date/count(int>=0)
+- 结果：✅ 通过（test_overview_weekly_distribution）
+
+### T-360-05 软打卡：开始上课 → 360 位置=治疗室、状态=治疗中
+- 前置：actor_set
+- 步骤：排课 → 开始上课 → 查 overview
+- 预期：current_status == treating、current_location == PT大厅（PRD §3.3 实时位置卡 + flows.md 速查表）
+- 结果：✅ 通过（test_overview_location_treating_after_start）
+
+### T-360-06 软打卡：结束上课 → 360 位置=病房、状态=在病房
+- 前置：actor_set（DB 预置 ward_location=住院部3楼5床）
+- 步骤：排课 → 开始 → 结束 → 查 overview
+- 预期：current_status == ward、current_location == 住院部3楼5床（flows.md 速查表：结束→在病房→病房）
+- 结果：✅ 通过（test_overview_location_ward_after_finish）
+
+## 21. M3 评估记录（assessments 列表/创建）
+
+> 验收依据：api.md §2（GET 列表 / POST 创建 / GET trend）。注意：任务体写「评估 CRUD」，但 api.md 与实现均无 PUT/DELETE → 见 ⚪Q-1。
+
+### T-ASS-01 列表结构（total + items）
+- 前置：管理员登录；种子患者
+- 步骤：GET /api/v1/patients/{pid}/assessments
+- 预期：200；含 total/items
+- 结果：✅ 通过（test_assessments_list_empty）
+
+### T-ASS-02 创建评估（康复师）→ 列表可见
+- 前置：种子康复师 pt_zhang（陈明责任康复师）登录
+- 步骤：POST /patients/{pid}/assessments（Fugl-Meyer, score=45.5, detail JSON）→ 列表查询
+- 预期：201；返回 assess_type/score/detail/assessor_name；列表 total>=1 且含该类型
+- 结果：✅ 通过（test_assessments_create_and_list）
+
+### T-ASS-03 列表按 assessed_at 倒序
+- 前置：pt_zhang 创建两条 Barthel（2026-01 / 2026-06）
+- 步骤：列表查询并过滤 Barthel
+- 预期：新在前（score 75 在 60 前）
+- 结果：✅ 通过（test_assessments_sorted_desc）
+
+### T-ASS-04 非责任康复师创建评估 → 404
+- 前置：actor_set + 新注册康复师（非责任）
+- 步骤：新康复师 POST /patients/{pid}/assessments
+- 预期：404（Patient not found or not assigned to you，数据权限）
+- 结果：✅ 通过（test_unassigned_therapist_cannot_create_assessment_404）
+
+### T-ASS-05 API 面核查：PUT/DELETE 评估 → 404（未实现）
+- 前置：管理员登录；actor_set
+- 步骤：PUT /patients/{pid}/assessments/1、DELETE /patients/{pid}/assessments/1
+- 预期：均 404（路由不存在）→ 与任务体「评估 CRUD」表述不符，记为 ⚪Q-1
+- 结果：✅ 通过（test_assessment_update_delete_not_implemented，行为符合 api.md）
+
+## 22. M3 评估趋势（assessments/trend）
+
+### T-TREND-A1 按 assess_type 过滤且按时间升序
+- 前置：pt_zhang 为陈明创建 3 条 Fugl-Meyer-Trend（2月/4月/7月，30/50/70 分）+ 1 条 Barthel-Trend
+- 步骤：GET /patients/{pid}/assessments/trend?type=Fugl-Meyer-Trend
+- 预期：200；patient_id/assess_type 正确；items 恰 3 条、score 升序 30→50→70（折线图序列）
+- 结果：✅ 通过（test_assessment_trend_returns_correct_type）
+
+### T-TREND-A2 无数据 → 空列表
+- 前置：管理员登录；种子患者
+- 步骤：GET .../trend?type=NonExistentType999
+- 预期：200；items == []
+- 结果：✅ 通过（test_assessment_trend_empty_for_no_data）
+
+## 23. M3 权限隔离（三角色覆盖）
+
+> 验收依据：architecture.md §4.4（医生=名下患者、康复师=名下患者、管理员=全部）+ 任务体硬性约束「权限用例必须覆盖三个角色」。
+
+### T-PERM-01 看板四接口仅管理员（康复师 403）
+- 前置：康复师登录
+- 步骤：GET kpis / patient-distribution / therapist-workload / course-trend
+- 预期：4 个均 403（require_role("admin")）
+- 结果：✅ 通过（test_dashboard_kpis_admin_only / test_dashboard_distribution_admin_only / test_dashboard_workload_admin_only / test_dashboard_trend_admin_only）
+
+### T-PERM-02 患者访问 dashboard → 403（任务体明确）
+- 前置：患者登录
+- 步骤：GET kpis / patient-distribution / therapist-workload / course-trend
+- 预期：4 个均 403
+- 结果：✅ 通过（test_dashboard_patient_role_forbidden）
+
+### T-PERM-03 医生访问 dashboard → 403
+- 前置：医生登录
+- 步骤：GET kpis / patient-distribution / course-trend
+- 预期：3 个均 403
+- 结果：✅ 通过（test_dashboard_doctor_role_forbidden）
+
+### T-PERM-04 医生查看名下患者 overview → 200
+- 前置：种子 dr_zhao（陈明主管医生）登录
+- 步骤：GET /patients/{陈明}/overview
+- 预期：200
+- 结果：✅ 通过（test_doctor_sees_own_patients_200）
+
+### T-PERM-05 医生查看非名下患者 → 404
+- 前置：dr_zhao 登录；actor_set 患者（非 dr_zhao 名下）
+- 步骤：GET /patients/{actor_set_pid}/overview
+- 预期：404（Patient not found，行级隔离）
+- 结果：✅ 通过（test_doctor_cannot_see_other_doctors_patients_404）
+
+### T-PERM-06 康复师查看非名下患者 → 404
+- 前置：新注册康复师登录；actor_set 患者（责任康复师非本人）
+- 步骤：GET /patients/{pid}/overview
+- 预期：404
+- 结果：✅ 通过（test_therapist_cannot_see_unassigned_patient_404）
+
+### T-PERM-07 患者访问 overview → 403
+- 前置：患者登录
+- 步骤：GET /patients/{种子}/overview
+- 预期：403（require_role doctor/therapist/admin）
+- 结果：✅ 通过（test_patient_cannot_access_overview_403）
+
+### T-PERM-08 未登录访问 overview → 401
+- 前置：无 token
+- 步骤：GET /patients/{pid}/overview
+- 预期：401（HTTPBearer）
+- 结果：✅ 通过（test_unauthenticated_overview_401）
+
+### T-PERM-09 医生查看名下患者评估列表 → 200
+- 前置：dr_zhao 登录；陈明
+- 步骤：GET /patients/{陈明}/assessments
+- 预期：200
+- 结果：✅ 通过（test_doctor_accesses_assessments_200）
+
+### T-PERM-10 仅康复师可创建评估（admin 403）
+- 前置：管理员登录；actor_set
+- 步骤：admin POST /patients/{pid}/assessments
+- 预期：403（require_role("therapist")）
+- 结果：✅ 通过（test_therapist_only_can_create_assessment）
+
+## 24. M3 全链路烟测（M1→M3 完整闭环）
+
+### T-SMOKE-M3-01 注册→登录→排课→通知→KPI→课表→开始/结束→KPI/360→趋势
+- 前置：独立账号（admin / therapist / patient）
+- 步骤：
+  1. 注册+登录三角色；/auth/me 校验角色
+  2. admin 今日排课（PT大厅）→ 201
+  3. 患者+康复师 GET /notifications → 均有 course_new（PRD §5 行1 / BUG-6 回归）
+  4. admin GET /dashboard/kpis → today_course_count == 基线+1
+  5. 康复师 GET /therapist/schedule?date=今日 → 含该课程
+  6. 康复师 POST /courses/{id}/start → 200；课程 ongoing；KPI treating +1；360 位置=PT大厅、状态=治疗中
+  7. 康复师 POST /courses/{id}/finish → 200；KPI treating 回落；360 状态=在病房
+  8. admin GET /dashboard/course-trend?days=7 → 今日计数 >=1
+- 预期：全程 2xx；KPI/360/趋势逐项联动（看板数据流闭环，flows.md 流程6）
+- 结果：✅ 通过（test_full_chain_m1_to_m3）
+
+## 25. M3 缺陷与疑问
+
+| 编号 | 级别 | 内容 | 影响用例 |
+| :--- | :--- | :--- | :--- |
+| ⚪Q-1 | ⚪ 疑问 | 任务体写「评估 CRUD」，但 api.md §2 与实现仅有 list/create/trend，无 PUT/DELETE 路由（返回 404） | T-ASS-05 |
+| ⚪Q-2 | ⚪ 疑问 | BUG-6/7/8 修复位于工作树（backend/app/services/* 4 文件未提交，git status dirty）；本次 112/112 在含修复的工作树验证通过，若主控未提交，HEAD 状态仍含 BUG-6/7/8 | T-NOT-01/T-ALT-06/T-NOT-06 回归 |
+
+> 详细复现与证据见 docs/qa/test-report-m3.md。
