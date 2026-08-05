@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 /**
  * 管理端布局 — AdminShell
  * docs/pages.md §4.2: 排课日历/主任看板/治疗室管理/康复师管理/异常预警/审计日志
+ * docs/pages.md §2.3: 排课日历页全宽（无 max-width），其余 max-w-[1400px]
  */
 
 const NAV_ITEMS = [
@@ -23,7 +24,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       </header>
 
       <div className="flex flex-1">
-        <aside className="w-60 bg-white border-r border-neutral-200 p-4 hidden lg:block">
+        <aside className="w-60 bg-white border-r border-neutral-200 p-4 hidden lg:block shrink-0">
           <nav className="space-y-1">
             {NAV_ITEMS.map((item) => (
               <a
@@ -37,7 +38,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
         </aside>
 
-        <main className="flex-1 bg-neutral-50 p-6 max-w-[1400px] mx-auto w-full">
+        {/* 排课日历页全宽；其余 max-w-[1400px] */}
+        <main className="flex-1 bg-neutral-50 w-full">
           {children}
         </main>
       </div>

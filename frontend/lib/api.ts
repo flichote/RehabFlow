@@ -126,3 +126,73 @@ export const authApi = {
   refresh: (refreshToken: string) =>
     api.post<LoginResponse>("/auth/refresh", { refresh_token: refreshToken }),
 };
+
+// === 类型 re-export ===
+export type {
+  CourseType,
+  CourseStatus,
+  PatientStatus,
+  Room,
+  TherapistResource,
+  ResourceGroup,
+  Course,
+  PoolPatient,
+  ConflictDetail,
+  ConflictResponse,
+  TodayOverview,
+  FreeSlot,
+  ScheduleTimelineItem,
+  CreateCoursePayload,
+  UpdateCoursePayload,
+} from "./types";
+
+// === Schedule API ===
+// TODO: 后端就绪后取消注释，切换到真实 API 调用
+
+export const scheduleApi = {
+  // GET /courses?from&to&therapist_id&group&room_id
+  // list: (params: Record<string, string>) =>
+  //   api.get<Course[]>("/courses?" + new URLSearchParams(params)),
+
+  // POST /courses — 创建课程（冲突 → 409 + ConflictResponse）
+  // create: (payload: CreateCoursePayload) =>
+  //   api.post<Course>("/courses", payload),
+
+  // GET /courses/{id}
+  // detail: (id: string) => api.get<Course>(`/courses/${id}`),
+
+  // PUT /courses/{id} — 修改时间
+  // update: (id: string, payload: UpdateCoursePayload) =>
+  //   api.put<Course>(`/courses/${id}`, payload),
+
+  // DELETE /courses/{id} — 取消课程
+  // cancel: (id: string) => api.delete<void>(`/courses/${id}`),
+
+  // POST /courses/{id}/force — 强制替换
+  // force: (id: string) => api.post<Course>(`/courses/${id}/force`),
+
+  // GET /scheduler/resources — 资源树
+  // resources: () => api.get<ResourceGroup[]>("/scheduler/resources"),
+
+  // GET /scheduler/pool — 待排患者池
+  // pool: () => api.get<PoolPatient[]>("/scheduler/pool"),
+};
+
+// === Course Execution API ===
+
+export const courseApi = {
+  // POST /courses/{id}/start — 开始上课
+  // start: (id: string) => api.post<Course>(`/courses/${id}/start`),
+
+  // POST /courses/{id}/finish — 结束上课
+  // finish: (id: string) => api.post<Course>(`/courses/${id}/finish`),
+
+  // POST /courses/{id}/remind — 一键提醒
+  // remind: (id: string) => api.post<void>(`/courses/${id}/remind`),
+
+  // GET /therapist/schedule?date= — 我的课表
+  // schedule: (date: string) =>
+  //   api.get<{ overview: TodayOverview; timeline: ScheduleTimelineItem[] }>(
+  //     `/therapist/schedule?date=${date}`
+  //   ),
+};

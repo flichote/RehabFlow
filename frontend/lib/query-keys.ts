@@ -25,4 +25,13 @@ export const queryKeys = {
   alerts: {
     list: (status?: string) => ["alerts", status ?? "all"] as const,
   },
+  scheduler: {
+    resources: ["scheduler", "resources"] as const,
+    pool: ["scheduler", "pool"] as const,
+    courses: (from: string, to: string, group?: string) =>
+      ["scheduler", "courses", from, to, group ?? "all"] as const,
+  },
+  courses: {
+    detail: (id: string) => ["courses", id] as const,
+  },
 } as const;
