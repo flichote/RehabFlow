@@ -15,12 +15,13 @@ No conflict:         201 with created course.
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.models import Course
 
 # Application-level lock for SQLite conflict detection serialization.
@@ -33,10 +34,30 @@ _scheduling_lock = asyncio.Lock()
 # Active course statuses — courses in these states conflict with new courses
 _ACTIVE_STATUSES = ("scheduled", "reminded", "ongoing")
 
+# 应用本地时区（默认 +08:00，见 config.APP_TZ_OFFSET_HOURS）
+_APP_TZ = timezone(timedelta(hours=settings.APP_TZ_OFFSET_HOURS))
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to timezone-aware UTC for comparison.
+
+    - Request datetimes arrive offset-aware (+08:00 etc.) → convert to UTC.
+    - SQLite returns naive datetimes (DateTime(timezone=True) drops the offset,
+      storing the local wall-clock). Treat naive as APP_TZ (local wall clock),
+      then convert to UTC — this keeps SQLite (dev) and PG16 (prod) consistent,
+      since PG's TIMESTAMPTZ returns aware datetimes already.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=_APP_TZ)
+    return dt.astimezone(timezone.utc)
+
 
 def _time_overlap(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
-    """True if two half-open intervals [start, end) overlap."""
-    return a_start < b_end and a_end > b_start
+    """True if two half-open intervals [start, end) overlap.
+
+    All datetimes are normalized to timezone-aware UTC before comparison.
+    """
+    return _as_utc(a_start) < _as_utc(b_end) and _as_utc(a_end) > _as_utc(b_start)
 
 
 async def create_course(

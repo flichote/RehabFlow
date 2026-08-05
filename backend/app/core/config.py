@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "RehabFlow"
+    # 应用时区（医院场景默认中国 +08:00）。SQLite 存 DateTime(timezone=True)
+    # 会丢失偏移（naive 墙钟），冲突检测比较前需按此补时区再转 UTC。
+    APP_TZ_OFFSET_HOURS: int = 8
 
 
 settings = Settings()
