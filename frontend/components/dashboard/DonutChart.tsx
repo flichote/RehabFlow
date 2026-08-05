@@ -3,7 +3,7 @@
 /**
  * DonutChart — 患者分布环形图
  * docs/design/components.md §5.1: 病房/PT/OT/ST 人数占比
- * 图表配色引用 token: pt/ot/st/neutral
+ * 图表配色引用 token: pt/ot/st/neutral (via lib/chart-tokens.ts)
  */
 
 import {
@@ -16,14 +16,11 @@ import {
 } from "recharts";
 import type { PatientDistribution } from "@/lib/types";
 import { ChartCard } from "./ChartCard";
-
-/** token 色值映射（引用 design-system.md §2.2/§2.4） */
-const COLORS: Record<string, string> = {
-  pt: "#3B82F6",
-  ot: "#22C55E",
-  st: "#F97316",
-  neutral: "#94A3B8",
-};
+import {
+  DISTRIBUTION_COLORS,
+  CHART_TOOLTIP_STYLE,
+  CHART_LEGEND_STYLE,
+} from "@/lib/chart-tokens";
 
 export function DonutChart({
   data,
@@ -52,7 +49,7 @@ export function DonutChart({
               paddingAngle={2}
             >
               {data.map((entry, idx) => (
-                <Cell key={idx} fill={COLORS[entry.color] ?? COLORS.neutral} />
+                <Cell key={idx} fill={DISTRIBUTION_COLORS[entry.color] ?? DISTRIBUTION_COLORS.neutral} />
               ))}
             </Pie>
             <Tooltip
@@ -60,16 +57,12 @@ export function DonutChart({
                 `${value} 人`,
                 name,
               ]}
-              contentStyle={{
-                borderRadius: 8,
-                border: "1px solid #E2E8F0",
-                fontSize: 13,
-              }}
+              contentStyle={CHART_TOOLTIP_STYLE}
             />
             <Legend
               iconType="circle"
               iconSize={8}
-              wrapperStyle={{ fontSize: 12, color: "#64748B" }}
+              wrapperStyle={CHART_LEGEND_STYLE}
             />
           </PieChart>
         </ResponsiveContainer>

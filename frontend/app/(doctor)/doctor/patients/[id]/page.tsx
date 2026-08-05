@@ -32,6 +32,12 @@ import {
 } from "@/lib/mock-dashboard";
 import type { PatientOverview, AssessmentRecord, AssessmentTrend } from "@/lib/types";
 import {
+  CHART_COLORS,
+  CHART_TICK_STYLE,
+  CHART_TOOLTIP_STYLE,
+  CHART_LEGEND_STYLE,
+} from "@/lib/chart-tokens";
+import {
   LineChart as RLineChart,
   Line,
   XAxis,
@@ -194,45 +200,39 @@ export default function PatientDetailPage({
                   <h3 className="text-base font-semibold text-neutral-900 mb-4">评估趋势</h3>
                   <ResponsiveContainer width="100%" height={240}>
                     <RLineChart data={assessmentTrend} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.neutral200} />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 12, fill: "#64748B" }}
-                        axisLine={{ stroke: "#E2E8F0" }}
+                        tick={CHART_TICK_STYLE}
+                        axisLine={{ stroke: CHART_COLORS.neutral200 }}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 12, fill: "#64748B" }}
+                        tick={CHART_TICK_STYLE}
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: 8,
-                          border: "1px solid #E2E8F0",
-                          fontSize: 13,
-                        }}
-                      />
+                      <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                       <Legend
                         iconType="line"
                         iconSize={12}
-                        wrapperStyle={{ fontSize: 12, color: "#64748B" }}
+                        wrapperStyle={CHART_LEGEND_STYLE}
                       />
                       <Line
                         type="monotone"
                         dataKey="fm_score"
                         name="Fugl-Meyer"
-                        stroke="#3B82F6"
+                        stroke={CHART_COLORS.pt}
                         strokeWidth={2}
-                        dot={{ r: 4, fill: "#3B82F6" }}
+                        dot={{ r: 4, fill: CHART_COLORS.pt }}
                       />
                       <Line
                         type="monotone"
                         dataKey="bi_score"
                         name="Barthel 指数"
-                        stroke="#22C55E"
+                        stroke={CHART_COLORS.ot}
                         strokeWidth={2}
-                        dot={{ r: 4, fill: "#22C55E" }}
+                        dot={{ r: 4, fill: CHART_COLORS.ot }}
                       />
                     </RLineChart>
                   </ResponsiveContainer>

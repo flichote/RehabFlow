@@ -3,7 +3,7 @@
 /**
  * BarChart — 治疗师今日课时柱状图
  * docs/design/components.md §5.1: 横轴康复师姓名
- * 图表配色引用 token: primary-500
+ * 图表配色引用 token: primary (via lib/chart-tokens.ts)
  */
 
 import {
@@ -17,6 +17,11 @@ import {
 } from "recharts";
 import type { TherapistWorkload } from "@/lib/types";
 import { ChartCard } from "./ChartCard";
+import {
+  CHART_COLORS,
+  CHART_TICK_STYLE,
+  CHART_TOOLTIP_STYLE,
+} from "@/lib/chart-tokens";
 
 export function BarChart({
   data,
@@ -34,29 +39,25 @@ export function BarChart({
       ) : (
         <ResponsiveContainer width="100%" height={200}>
           <RBarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.neutral200} vertical={false} />
             <XAxis
               dataKey="therapist_name"
-              tick={{ fontSize: 12, fill: "#64748B" }}
-              axisLine={{ stroke: "#E2E8F0" }}
+              tick={CHART_TICK_STYLE}
+              axisLine={{ stroke: CHART_COLORS.neutral200 }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#64748B" }}
+              tick={CHART_TICK_STYLE}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
               formatter={(value) => [`${value} 分钟`, "课时"]}
-              contentStyle={{
-                borderRadius: 8,
-                border: "1px solid #E2E8F0",
-                fontSize: 13,
-              }}
+              contentStyle={CHART_TOOLTIP_STYLE}
             />
             <Bar
               dataKey="total_minutes"
-              fill="#6366F1"
+              fill={CHART_COLORS.primary}
               radius={[4, 4, 0, 0]}
               maxBarSize={48}
             />
