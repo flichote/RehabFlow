@@ -59,7 +59,7 @@ export default function RegisterPage() {
       await authApi.register({
         username,
         password,
-        full_name: fullName,
+        display_name: fullName,
         role,
         phone: phone || undefined,
       });

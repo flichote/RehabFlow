@@ -95,7 +95,8 @@ export type UserRole = "patient" | "therapist" | "doctor" | "admin";
 export interface AuthUser {
   id: string;
   username: string;
-  full_name: string;
+  /** 与后端 me() 响应一致：display_name（实测返回 display_name） */
+  display_name: string;
   role: UserRole;
 }
 
@@ -108,7 +109,8 @@ export interface LoginResponse {
 export interface RegisterPayload {
   username: string;
   password: string;
-  full_name: string;
+  /** 与后端 schema 一致：display_name（数据库列名） */
+  display_name: string;
   role: UserRole;
   phone?: string;
 }
