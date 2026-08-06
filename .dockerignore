@@ -1,0 +1,35 @@
+# Docker 构建上下文排除（docker-compose build context = 项目根）
+# 防止把本机开发产物打进镜像
+
+# 依赖与构建产物
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/.venv
+**/.conda-deps-installed
+
+# 数据与日志
+**/*.db
+**/*.sqlite*
+**/logs
+
+# 环境与密钥
+**/.env
+**/.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# 编辑器/系统
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# 测试与临时
+**/tests/_test_*.db
+hermes-verify-*
+*.state

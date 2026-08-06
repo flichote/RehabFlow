@@ -1,0 +1,28 @@
+# ============================================================
+# RehabFlow systemd 服务 — 定时任务调度器（APScheduler 单进程）
+# 独立进程避免多 worker 重复执行定时任务（课前提醒/超时检测/巡检）
+# ============================================================
+[Unit]
+Description=RehabFlow Scheduler (APScheduler)
+After=network.target
+Requires=rehabflow-backend.service
+
+[Service]
+Type=simple
+User=rehabflow
+Group=rehabflow
+WorkingDirectory=/opt/RehabFlow/backend
+EnvironmentFile=/opt/RehabFlow/.env
+# 单进程（不 --workers），仅负责定时任务与健康（不对外服务）
+ExecStart=/opt/miniconda3/envs/rehabflow/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+Environment=RUN_SCHEDULER=true
+Restart=always
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/RehabFlow/backend/rehabflow.db /opt/RehabFlow/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

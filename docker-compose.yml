@@ -1,0 +1,106 @@
+# ============================================================
+# RehabFlow — Docker Compose 生产编排（Linux 部署）
+# 用法：
+#   docker compose up -d --build
+# 访问：http://<服务器IP>:80  （nginx 统一入口，对外服务）
+#
+# 拓扑：nginx(80) → frontend(Next standalone:3000) + backend(FastAPI:8000)
+# 数据：SQLite 持久化卷 rehabflow-data（backend/rehabflow.db）
+#       切 PostgreSQL 16 只需设 DATABASE_URL 并取消 postgres 服务注释
+# ============================================================
+
+services:
+  # ---------- 后端 ----------
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    environment:
+      # SQLite 持久化（挂载卷内）
+      DATABASE_URL: "sqlite+aiosqlite:////data/rehabflow.db"
+      # 生产密钥：务必用 openssl rand -hex 32 生成并替换
+      SECRET_KEY: "${SECRET_KEY:-change-me-in-production}"
+      # JWT 有效期（分钟/天）
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      # 应用时区偏移（医院场景默认 +08:00）
+      APP_TZ_OFFSET_HOURS: "8"
+      # 定时任务：由独立 scheduler 服务运行（本容器多 worker，不跑调度避免重复）
+      RUN_SCHEDULER: "false"
+    volumes:
+      - rehabflow-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - rehabflow-net
+
+  # ---------- 定时任务调度器（单进程，避免多 worker 重复执行） ----------
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: "sqlite+aiosqlite:////data/rehabflow.db"
+      SECRET_KEY: "${SECRET_KEY:-change-me-in-production}"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      APP_TZ_OFFSET_HOURS: "8"
+      RUN_SCHEDULER: "true"
+    volumes:
+      - rehabflow-data:/data
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - rehabflow-net
+
+  # ---------- 前端 + Nginx（对外入口） ----------
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        NEXT_OUTPUT: standalone
+    restart: unless-stopped
+    ports:
+      # 对外暴露：80 → nginx。改端口改左侧即可
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - rehabflow-net
+
+  # ---------- PostgreSQL 16（可选：业务增长后启用） ----------
+  # postgres:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: rehabflow
+  #     POSTGRES_PASSWORD: "${PG_PASSWORD:-rehabflow}"
+  #     POSTGRES_DB: rehabflow
+  #   volumes:
+  #     - pg-data:/var/lib/postgresql/data
+  #   networks:
+  #     - rehabflow-net
+
+  # ---------- Redis 7（可选：排课缓存写穿，M2 启用） ----------
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+  #   networks:
+  #     - rehabflow-net
+
+volumes:
+  rehabflow-data:
+  # pg-data:
+
+networks:
+  rehabflow-net:
+    driver: bridge

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /** 生产：standalone 输出（Docker 部署用，见 docker/frontend.Dockerfile） */
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
+
   /**
    * 允许的开发来源（dev 模式跨源 JS 加载白名单）：
    * 防止 Next.js dev server 拦截 127.0.0.1 / 局域网 IP 访问时

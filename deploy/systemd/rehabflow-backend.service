@@ -1,0 +1,33 @@
+# ============================================================
+# RehabFlow systemd 服务 — 后端 API（FastAPI + Uvicorn 多 worker）
+# 安装：sudo cp deploy/systemd/rehabflow-backend.service /etc/systemd/system/
+#       sudo systemctl daemon-reload && sudo systemctl enable --now rehabflow-backend
+# ============================================================
+[Unit]
+Description=RehabFlow Backend API (FastAPI/Uvicorn)
+After=network.target
+Wants=rehabflow-scheduler.service
+
+[Service]
+Type=simple
+# 运行用户（部署时按需修改为实际用户，如 rehabflow）
+User=rehabflow
+Group=rehabflow
+# 项目路径（部署时修改）
+WorkingDirectory=/opt/RehabFlow/backend
+EnvironmentFile=/opt/RehabFlow/.env
+# conda 环境 python（部署时确认路径；无 conda 可用系统 python3.11）
+ExecStart=/opt/miniconda3/envs/rehabflow/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --timeout-keep-alive 30
+Restart=always
+RestartSec=3
+# 多 worker 下不跑调度器（独立 scheduler 服务负责）
+Environment=RUN_SCHEDULER=false
+
+# 安全加固
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/RehabFlow/backend/rehabflow.db /opt/RehabFlow/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
