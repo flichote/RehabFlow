@@ -1,0 +1,4 @@
+# RehabFlow 依赖入口（根目录）
+# 真实依赖清单在 backend/requirements.txt（单一事实源，避免双份漂移）。
+# pip install -r requirements.txt 会自动递归读取 backend 的清单。
+-r backend/requirements.txt
