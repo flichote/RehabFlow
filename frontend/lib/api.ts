@@ -1,10 +1,14 @@
 /**
  * API fetch 封装 — JWT 注入 + 错误处理
  * docs/api.md 为接口契约，统一前缀 /api/v1
+ *
+ * 同源代理：请求走 /api/*（Next.js rewrites 转发到后端），
+ * 避免跨域（localhost/127.0.0.1/局域网 IP 访问均不受 CORS 限制）。
+ * 若需直连后端可设 NEXT_PUBLIC_API_URL。
  */
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
 /** 读取 access token（浏览器端从 cookie 获取） */
 function getAccessToken(): string | null {
