@@ -31,8 +31,15 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 登录/注册/错误页不需要守卫
-  const publicPaths = ["/login", "/register", "/403", "/404", "/500"];
+  // 登录/注册/忘记密码/错误页不需要守卫
+  const publicPaths = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/403",
+    "/404",
+    "/500",
+  ];
   if (publicPaths.includes(pathname) || pathname === "/") {
     return NextResponse.next();
   }

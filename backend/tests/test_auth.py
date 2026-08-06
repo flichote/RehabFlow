@@ -4,7 +4,7 @@
 """
 from __future__ import annotations
 
-from tests.conftest import auth_headers, register_and_login
+from tests.conftest import _test_phone, auth_headers, register_and_login
 
 
 # ── 注册 ──────────────────────────────────────────────────────────
@@ -110,3 +110,100 @@ def test_logout_invalid_token_idempotent(client):
     r = client.post("/api/v1/auth/logout", json={"refresh_token": "not-a-real-token"})
     assert r.status_code == 200
     assert r.json()["message"] == "Logged out"
+
+
+# ── 忘记密码（手机号 + 验证码） ──────────────────────────────────
+
+
+def test_password_reset_flow(client):
+    """忘记密码全链路：发验证码 → 验证码重置 → 旧密码失效新密码可登录。"""
+    _, _, _ = register_and_login(client, "patient", username="reset_flow")
+    # 拿到该用户的手机号（helper 生成的 phone 与 username 同种子）
+    phone = _test_phone("reset_flow")
+
+    # ① 请求验证码
+    r = client.post("/api/v1/auth/password-reset/request", json={"phone": phone})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["dev_code"] and len(body["dev_code"]) == 6
+
+    # ② 错误验证码 → 400
+    r = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"phone": phone, "code": "000000", "new_password": "newpass123"},
+    )
+    assert r.status_code == 400
+
+    # ③ 正确验证码 → 200
+    r = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"phone": phone, "code": body["dev_code"], "new_password": "newpass123"},
+    )
+    assert r.status_code == 200, r.text
+
+    # ④ 旧密码登录失败、新密码登录成功
+    r = client.post("/api/v1/auth/login", json={"username": "reset_flow", "password": "secret123"})
+    assert r.status_code == 401
+    r = client.post("/api/v1/auth/login", json={"username": "reset_flow", "password": "newpass123"})
+    assert r.status_code == 200
+
+
+def test_password_reset_unregistered_phone(client):
+    """未注册手机号请求验证码也返回 200（防枚举），但 confirm 会 400。"""
+    r = client.post("/api/v1/auth/password-reset/request", json={"phone": "13999999999"})
+    assert r.status_code == 200
+    body = r.json()
+    r = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"phone": "13999999999", "code": body["dev_code"], "new_password": "newpass123"},
+    )
+    assert r.status_code == 400
+    assert "未注册" in r.json()["detail"]
+
+
+def test_password_reset_invalid_phone_422(client):
+    """手机号格式非法 → 422。"""
+    r = client.post("/api/v1/auth/password-reset/request", json={"phone": "123"})
+    assert r.status_code == 422
+
+
+# ── 登录后修改密码 ───────────────────────────────────────────────
+
+
+def test_change_password_flow(client):
+    """修改密码：原密码校验 → 新密码生效 → 旧 refresh token 被撤销。"""
+    tok, refresh, _ = register_and_login(client, "therapist", username="chg_pwd")
+
+    # 原密码错误 → 400
+    r = client.post(
+        "/api/v1/auth/change-password",
+        json={"old_password": "wrong", "new_password": "newpass456"},
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 400
+    assert "原密码不正确" in r.json()["detail"]
+
+    # 原密码正确 → 200
+    r = client.post(
+        "/api/v1/auth/change-password",
+        json={"old_password": "secret123", "new_password": "newpass456"},
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 200
+
+    # 新密码登录成功
+    r = client.post("/api/v1/auth/login", json={"username": "chg_pwd", "password": "newpass456"})
+    assert r.status_code == 200
+
+    # 旧 refresh token 已被撤销 → 401
+    r = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh})
+    assert r.status_code == 401
+
+
+def test_change_password_requires_auth(client):
+    """未登录调用修改密码 → 401。"""
+    r = client.post(
+        "/api/v1/auth/change-password",
+        json={"old_password": "x", "new_password": "newpass456"},
+    )
+    assert r.status_code == 401

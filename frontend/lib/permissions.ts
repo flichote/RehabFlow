@@ -36,13 +36,23 @@ export const ROLE_PREFIX: Record<UserRole, string> = {
  * @returns 是否允许访问
  */
 export function canAccess(role: UserRole, pathname: string): boolean {
+  // 账号设置（修改密码）对所有角色开放
+  if (pathname === "/account/password" || pathname.startsWith("/account/")) {
+    return true;
+  }
   const prefix = ROLE_PREFIX[role];
   // 精确匹配前缀或前缀 + /
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
 /** 所有需要认证的路由前缀 */
-export const PROTECTED_PREFIXES = ["/patient", "/therapist", "/doctor", "/admin"];
+export const PROTECTED_PREFIXES = [
+  "/patient",
+  "/therapist",
+  "/doctor",
+  "/admin",
+  "/account",
+];
 
 /** 判断路径是否需要认证 */
 export function isProtectedPath(pathname: string): boolean {

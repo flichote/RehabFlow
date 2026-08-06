@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LogOut, User } from "lucide-react";
+import { KeyRound, LogOut, User } from "lucide-react";
 import { authApi } from "@/lib/api";
 
 /**
@@ -72,6 +73,15 @@ export default function UserMenu() {
             <div className="px-3 py-2 text-xs text-neutral-500 border-b border-neutral-100">
               {username || "未登录"}
             </div>
+            <Link
+              href="/account/password"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+            >
+              <KeyRound className="h-4 w-4" />
+              修改密码
+            </Link>
             <button
               type="button"
               role="menuitem"

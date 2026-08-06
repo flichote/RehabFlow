@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Activity, Stethoscope, HeartPulse, ShieldCheck } from "lucide-react";
-import { authApi, ApiError, type UserRole } from "@/lib/api";
+import { authApi, getErrorMessage, type UserRole } from "@/lib/api";
 import { ROLE_LABELS, ROLE_HOME } from "@/lib/permissions";
 
 const ROLE_OPTIONS: {
@@ -67,16 +67,8 @@ export default function RegisterPage() {
       // 注册成功后跳转登录页
       router.push("/login?registered=1");
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 409) {
-          setError("用户名已存在");
-        } else {
-          setError(`注册失败：${err.status}`);
-        }
-      } else {
-        // 后端未就绪时的降级提示
-        setError("注册服务暂不可用，请稍后重试");
-      }
+      // 显示后端具体错误（用户名已存在 / 手机号格式 / 必填项缺失等）
+      setError(getErrorMessage(err, "注册失败，请检查填写的信息"));
     } finally {
       setLoading(false);
     }
