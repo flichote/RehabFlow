@@ -1,5 +1,9 @@
 # RehabFlow（康复流程流）
 
+![Version](https://img.shields.io/badge/version-v0.1.0-blue) ![Tests](https://img.shields.io/badge/tests-119%2F119-brightgreen) ![Routes](https://img.shields.io/badge/routes-26-brightgreen) ![Status](https://img.shields.io/badge/status-stable-58a6ff)
+
+> 版本记录见 [docs/CHANGELOG.md](docs/CHANGELOG.md)（v0.1.0 首个可用版本，已公网部署）
+
 > 院内康复治疗排课与执行管理系统 —— 排课 → 提醒 → 治疗执行 → 软打卡定位 → 异常预警 → 数据看板
 
 **RehabFlow 是一个全新独立项目**，与 Continuum-Care-Network（延续康护，CCN）定位区分，并且**独立于医院现有 HIS 系统运行**：
