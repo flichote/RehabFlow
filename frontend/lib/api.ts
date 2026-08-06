@@ -132,6 +132,10 @@ export const authApi = {
 
   refresh: (refreshToken: string) =>
     api.post<LoginResponse>("/auth/refresh", { refresh_token: refreshToken }),
+
+  /** 退出登录：撤销 refresh token（无 body 返回，见 docs/api.md） */
+  logout: (refreshToken: string) =>
+    api.post<{ message: string }>("/auth/logout", { refresh_token: refreshToken }),
 };
 
 // === 类型 re-export ===

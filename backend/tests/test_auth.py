@@ -20,18 +20,19 @@ def test_register_all_roles(client):
 def test_register_duplicate_username_409(client):
     tok, _, _ = register_and_login(client, "admin", username="dup_user")
     assert tok
-    # 同名再次注册 → 409
+    # 同名再次注册 → 409（需带 phone，否则先命中 422 phone missing）
     r = client.post(
         "/api/v1/auth/register",
-        json={"username": "dup_user", "password": "secret123", "display_name": "dup", "role": "patient"},
+        json={"username": "dup_user", "password": "secret123", "display_name": "dup", "role": "patient", "phone": "13800000001"},
     )
     assert r.status_code == 409
 
 
 def test_register_invalid_role_422(client):
+    # 缺 phone 也会 422——此测试验证 role 非法，phone 给合法值以聚焦 role
     r = client.post(
         "/api/v1/auth/register",
-        json={"username": "bad_role", "password": "secret123", "display_name": "bad", "role": "superman"},
+        json={"username": "bad_role", "password": "secret123", "display_name": "bad", "role": "superman", "phone": "13800000002"},
     )
     assert r.status_code == 422
 
@@ -77,3 +78,35 @@ def test_refresh_with_access_token_401(client):
     # 用 access token 冒充 refresh → 401
     r = client.post("/api/v1/auth/refresh", json={"refresh_token": tok})
     assert r.status_code == 401
+
+
+# ── logout ────────────────────────────────────────────────────────
+
+
+def test_logout_revokes_refresh(client):
+    """logout 后 refresh token 失效（401），幂等可重复调用。"""
+    _, refresh, _ = register_and_login(client, "patient")
+
+    # logout 前 refresh 可用
+    r0 = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh})
+    assert r0.status_code == 200
+
+    # logout → 200
+    r1 = client.post("/api/v1/auth/logout", json={"refresh_token": refresh})
+    assert r1.status_code == 200
+    assert r1.json()["message"] == "Logged out"
+
+    # 已撤销的 refresh 再 refresh → 401
+    r2 = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh})
+    assert r2.status_code == 401
+
+    # 幂等：重复 logout 仍 200
+    r3 = client.post("/api/v1/auth/logout", json={"refresh_token": refresh})
+    assert r3.status_code == 200
+
+
+def test_logout_invalid_token_idempotent(client):
+    """非法/伪造 token logout 也返回 200（幂等，不泄露信息）。"""
+    r = client.post("/api/v1/auth/logout", json={"refresh_token": "not-a-real-token"})
+    assert r.status_code == 200
+    assert r.json()["message"] == "Logged out"
