@@ -51,6 +51,7 @@ async def register(
         password_hash=hash_password(body.password),
         role=body.role,
         display_name=body.display_name,
+        phone=body.phone,
     )
     db.add(user)
     await db.flush()

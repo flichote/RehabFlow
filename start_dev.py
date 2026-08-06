@@ -182,6 +182,18 @@ def wait_health(url: str, name: str, timeout: int = 60) -> bool:
     return False
 
 
+def clean_env() -> dict:
+    """子进程环境：清理 PYTHONPATH/VIRTUAL_ENV 污染。
+
+    主控 shell 常带有 hermes-agent 的 PYTHONPATH，uvicorn/npm 继承后会
+    加载错误的包（症状：改了代码不生效，行为像旧版本）。必须显式剥离。
+    """
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    env.pop("VIRTUAL_ENV", None)
+    return env
+
+
 def start_servers(env_py: str, with_frontend: bool) -> tuple[list[subprocess.Popen], list[Path]]:
     """并行启动前后端，返回 (进程列表, 日志文件列表)。"""
     log("· 启动后端 uvicorn :8000 ...", YELLOW)
@@ -190,6 +202,7 @@ def start_servers(env_py: str, with_frontend: bool) -> tuple[list[subprocess.Pop
     be = subprocess.Popen(
         [env_py, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
         cwd=BACKEND,
+        env=clean_env(),
         stdout=open(backend_log, "a", encoding="utf-8"),
         stderr=subprocess.STDOUT,
     )
@@ -211,6 +224,7 @@ def start_servers(env_py: str, with_frontend: bool) -> tuple[list[subprocess.Pop
         fe = subprocess.Popen(
             [npm_cmd, "run", "dev"],
             cwd=FRONTEND,
+            env=clean_env(),
             stdout=open(frontend_log, "a", encoding="utf-8"),
             stderr=subprocess.STDOUT,
         )

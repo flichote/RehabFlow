@@ -14,6 +14,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=128)
     display_name: str = Field(min_length=1, max_length=64)
     role: str = Field(pattern=r"^(patient|therapist|doctor|admin)$")
+    # 手机号必填（医院联系/短信提醒；PRD §5 短信通道预留）
+    phone: str = Field(min_length=11, max_length=20, pattern=r"^1\d{10}$")
 
 
 class LoginRequest(BaseModel):
