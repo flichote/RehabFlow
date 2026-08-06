@@ -123,6 +123,24 @@ echo "· next build（BACKEND_URL=http://127.0.0.1:$BACKEND_PORT）..."
 BACKEND_URL="http://127.0.0.1:$BACKEND_PORT" npm run build 2>&1 | tail -4
 echo "✓ 前端构建完成（目录: $BUILD_DIR）"
 
+# ---------- 5.5 停止旧服务（防端口占用：6006/6008 被旧实例占用会导致新服务启动失败） ----------
+echo ""
+echo "── 5.5 停止旧服务 ──"
+# 按端口清理（精确，避免误杀）
+for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
+    pids="$(fuser -n tcp "$port" 2>/dev/null | tr ' ' '\n' | head -5 || true)"
+    if [ -n "$pids" ]; then
+        for pid in $pids; do
+            kill "$pid" 2>/dev/null && echo "· 停止端口 $port 的旧进程 PID $pid"
+        done
+    fi
+done
+# 兜底：按进程名清理（uvicorn / next start）
+pkill -f "uvicorn app.main:app" 2>/dev/null && echo "· 已停止旧 uvicorn" || true
+pkill -f "next start" 2>/dev/null && echo "· 已停止旧 next" || true
+sleep 2
+echo "✓ 旧服务已清理"
+
 # ---------- 6. 启动服务（后台） ----------
 echo ""
 echo "── 6. 启动服务 ──"
