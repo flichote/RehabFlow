@@ -31,6 +31,32 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class PasswordResetRequest(BaseModel):
+    """忘记密码第一步：按手机号发送验证码。"""
+
+    phone: str = Field(min_length=11, max_length=20, pattern=r"^1\d{10}$")
+
+
+class PasswordResetConfirm(BaseModel):
+    """忘记密码第二步：验证码 + 新密码重置。"""
+
+    phone: str = Field(min_length=11, max_length=20, pattern=r"^1\d{10}$")
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+class PasswordResetCodeResponse(BaseModel):
+    message: str
+    expires_in: int = 300
+    # 院内系统无短信通道：验证码随日志输出；生产接入短信服务后移除该字段
+    dev_code: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str

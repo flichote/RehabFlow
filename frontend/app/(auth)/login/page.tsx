@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { authApi, ApiError, type UserRole } from "@/lib/api";
+import { authApi, getErrorMessage, type UserRole } from "@/lib/api";
 import { ROLE_HOME } from "@/lib/permissions";
 
 function LoginForm() {
@@ -34,16 +34,8 @@ function LoginForm() {
 
       router.push(home);
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 401) {
-          setError("用户名或密码错误");
-        } else {
-          setError(`登录失败：${err.status}`);
-        }
-      } else {
-        // 后端未就绪时的降级提示
-        setError("登录服务暂不可用，请稍后重试");
-      }
+      // 显示后端返回的具体错误（如"用户名或密码错误"、手机号格式等）
+      setError(getErrorMessage(err, "登录失败，请检查用户名和密码"));
     } finally {
       setLoading(false);
     }
@@ -98,6 +90,15 @@ function LoginForm() {
             {error}
           </p>
         )}
+
+        <div className="flex justify-end">
+          <Link
+            href="/forgot-password"
+            className="text-xs text-primary-600 hover:text-primary-700"
+          >
+            忘记密码？
+          </Link>
+        </div>
 
         <button
           type="submit"

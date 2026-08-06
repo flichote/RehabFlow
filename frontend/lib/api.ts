@@ -30,6 +30,59 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 从 ApiError 提取人类可读的错误信息（显示给用户）。
+ * 兼容 FastAPI 两种 detail 形态：
+ *   - 字符串：{"detail": "Invalid username or password"}
+ *   - 数组（Pydantic 422 校验）：{"detail": [{"loc": ["body","phone"], "msg": "..."}]}
+ */
+export function getErrorMessage(err: unknown, fallback = "操作失败，请稍后重试"): string {
+  if (err instanceof ApiError) {
+    const d = err.detail;
+    if (typeof d === "string" && d.trim()) return d;
+    if (Array.isArray(d) && d.length > 0) {
+      const first = d[0] as { msg?: string; loc?: unknown[] } | undefined;
+      if (first?.msg) {
+        const field = Array.isArray(first.loc) && first.loc.length > 1
+          ? String(first.loc[first.loc.length - 1])
+          : "";
+        const fieldLabel: Record<string, string> = {
+          username: "用户名",
+          password: "密码",
+          phone: "手机号",
+          display_name: "姓名",
+          code: "验证码",
+          new_password: "新密码",
+          old_password: "原密码",
+        };
+        const label = fieldLabel[field] ?? field;
+        const msg = translateFieldError(first.msg, field);
+        return label ? `${label}：${msg}` : msg;
+      }
+    }
+    if (err.status === 401) return "登录已失效，请重新登录";
+    if (err.status === 403) return "没有权限执行此操作";
+    if (err.status === 404) return "请求的资源不存在";
+    if (err.status >= 500) return "服务器开小差了，请稍后重试";
+    return fallback;
+  }
+  return fallback;
+}
+
+/** 把 Pydantic 校验消息转成用户友好的中文 */
+function translateFieldError(msg: string, field: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("field required") || m.includes("missing")) return "此项为必填项";
+  if (m.includes("pattern")) {
+    if (field === "phone") return "请输入 11 位手机号（1 开头）";
+    if (field === "code") return "请输入 6 位数字验证码";
+    return "格式不正确";
+  }
+  if (m.includes("at least") || m.includes("short")) return "长度不足";
+  if (m.includes("too long") || m.includes("long")) return "长度超出限制";
+  return msg;
+}
+
 /** 核心 fetch 封装 */
 async function request<T>(
   path: string,
@@ -136,6 +189,28 @@ export const authApi = {
   /** 退出登录：撤销 refresh token（无 body 返回，见 docs/api.md） */
   logout: (refreshToken: string) =>
     api.post<{ message: string }>("/auth/logout", { refresh_token: refreshToken }),
+
+  /** 忘记密码①：按手机号发送验证码 */
+  requestPasswordReset: (phone: string) =>
+    api.post<{ message: string; expires_in: number; dev_code?: string | null }>(
+      "/auth/password-reset/request",
+      { phone }
+    ),
+
+  /** 忘记密码②：验证码 + 新密码重置 */
+  confirmPasswordReset: (phone: string, code: string, newPassword: string) =>
+    api.post<{ message: string }>("/auth/password-reset/confirm", {
+      phone,
+      code,
+      new_password: newPassword,
+    }),
+
+  /** 登录后修改密码（校验旧密码） */
+  changePassword: (oldPassword: string, newPassword: string) =>
+    api.post<{ message: string }>("/auth/change-password", {
+      old_password: oldPassword,
+      new_password: newPassword,
+    }),
 };
 
 // === 类型 re-export ===

@@ -537,3 +537,25 @@ class RefreshToken(Base):
     user: Mapped["User"] = relationship(lazy="selectin")
 
     __table_args__ = (Index("idx_refresh_tokens_user", "user_id"),)
+
+
+# ---------------------------------------------------------------------------
+# 16. password_reset_codes 密码重置验证码（§2.16）
+# ---------------------------------------------------------------------------
+class PasswordResetCode(Base):
+    __tablename__ = "password_reset_codes"
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
+    phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True, comment="手机号")
+    code_hash: Mapped[str] = mapped_column(String(128), nullable=False, comment="SHA-256(验证码)")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("idx_reset_codes_phone_created", "phone", "created_at"),
+    )
