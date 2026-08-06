@@ -61,7 +61,7 @@ export default function RegisterPage() {
         password,
         display_name: fullName,
         role,
-        phone: phone || undefined,
+        phone,
       });
 
       // 注册成功后跳转登录页
@@ -166,15 +166,18 @@ export default function RegisterPage() {
             htmlFor="reg-phone"
             className="block text-sm font-medium text-neutral-700 mb-1"
           >
-            手机号 <span className="text-neutral-400">（选填）</span>
+            手机号
           </label>
           <input
             id="reg-phone"
             type="tel"
+            required
+            pattern="1[0-9]{10}"
+            title="请输入 11 位手机号（1 开头）"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="请输入手机号"
+            placeholder="请输入 11 位手机号"
           />
         </div>
 

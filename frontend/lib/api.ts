@@ -112,7 +112,8 @@ export interface RegisterPayload {
   /** 与后端 schema 一致：display_name（数据库列名） */
   display_name: string;
   role: UserRole;
-  phone?: string;
+  /** 必填：医院联系/短信提醒（后端校验 ^1\d{10}$） */
+  phone: string;
 }
 
 // === Auth API ===
