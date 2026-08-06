@@ -48,13 +48,29 @@ def _unique(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:8]}"
 
 
+def _test_phone(seed: str) -> str:
+    """从种子字符串派生稳定 11 位纯数字手机号（1 开头）。"""
+    import hashlib
+
+    h = hashlib.md5(seed.encode()).hexdigest()  # 32 hex chars
+    # a-f → 0-5，保证全数字且长度足够（32 位）
+    digits = "".join(str(int(c, 16) % 10) for c in h)
+    return "13" + digits[:9]  # 13 + 9 位 = 11 位
+
+
 def register_and_login(client: TestClient, role: str, username: str | None = None):
     """注册并登录，返回 (access_token, refresh_token, user_id)。"""
     uname = username or _unique(role)
     pwd = "secret123"
     r = client.post(
         "/api/v1/auth/register",
-        json={"username": uname, "password": pwd, "display_name": uname, "role": role},
+        json={
+            "username": uname,
+            "password": pwd,
+            "display_name": uname,
+            "role": role,
+            "phone": _test_phone(uname),
+        },
     )
     assert r.status_code == 201, f"register {role} failed: {r.status_code} {r.text}"
     user_id = r.json()["user_id"]

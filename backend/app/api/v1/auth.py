@@ -14,12 +14,14 @@ from app.core.security import (
     decode_token,
     hash_password,
     hash_token,
+    revoke_refresh_token,
     rotate_refresh_token,
     store_refresh_token,
 )
 from app.models.models import Doctor, Patient, RefreshToken, Therapist, User
 from app.schemas.schemas import (
     LoginRequest,
+    LogoutRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
@@ -158,3 +160,20 @@ async def refresh(
     new_refresh = await rotate_refresh_token(db, raw_token, user.id)
 
     return TokenResponse(access_token=new_access, refresh_token=new_refresh)
+
+
+@router.post("/logout")
+async def logout(
+    body: LogoutRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """注销：撤销 refresh token（幂等——token 不存在/已撤销也返回成功）。"""
+    try:
+        payload = decode_token(body.refresh_token)
+    except Exception:
+        return {"message": "Logged out"}
+
+    if payload.get("type") == "refresh":
+        await revoke_refresh_token(db, body.refresh_token)
+
+    return {"message": "Logged out"}

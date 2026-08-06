@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import UserMenu from "@/components/auth/UserMenu";
 
 /**
  * 康复师端布局 — AppShell
@@ -19,6 +20,7 @@ export default function TherapistLayout({ children }: { children: ReactNode }) {
       <header className="h-16 bg-white border-b border-neutral-200 flex items-center px-6 sticky top-0 z-30">
         <span className="text-lg font-bold text-primary-800">RehabFlow</span>
         <span className="ml-3 text-sm text-neutral-500">康复师端</span>
+        <UserMenu />
       </header>
 
       <div className="flex flex-1">
