@@ -63,7 +63,25 @@ python start_dev.py --force-deps    # 强制重装依赖
 
 **环境说明**：conda 环境名为 `rehabflow`（Python 3.11），首次运行自动创建+装依赖（较慢），之后秒启动。数据库为 `backend/rehabflow.db`（SQLite），日志在 `logs/`。
 
-> 完整部署（PostgreSQL + Redis）见 `docs/ops/`（规划中）。
+## 生产部署（Linux）
+
+**方案 A：常规部署（systemd + nginx + conda，无 Docker）**
+
+```bash
+git clone https://github.com/flichote/RehabFlow.git && cd RehabFlow
+sudo bash deploy/install_linux.sh    # 一键：conda 环境 + DB + 3 个 systemd 服务 + nginx
+# 访问 http://<服务器IP>/
+```
+
+**方案 B：Docker Compose**
+
+```bash
+cp .env.example .env && vim .env   # 改 SECRET_KEY！
+docker compose up -d --build
+# 访问 http://<服务器IP>/   （nginx 统一入口 :80）
+```
+
+> 两种方案拓扑一致：nginx(80) → Next.js + FastAPI 多 worker + 独立调度器；SQLite 卷/文件持久化，业务增长切 PostgreSQL 16。详见 `docs/ops/deployment.md`。
 
 ## 文档索引
 
@@ -73,6 +91,7 @@ python start_dev.py --force-deps    # 强制重装依赖
 - `docs/database.md` — **数据模型**（15 张核心表，字段级）
 - `docs/api.md` — **API 接口大纲**（REST 端点 + 权限标注）
 - `docs/structure.md` — **目录结构规划**（前后端骨架蓝图）
+- `docs/ops/deployment.md` — **生产部署**（Linux/Docker Compose：nginx 对外 + 多 worker + 调度器 + PG 迁移）
 - `docs/design/design-system.md` — 设计系统（视觉 token）
 - `docs/design/pages.md` — 页面结构与信息架构
 - `docs/design/components.md` — 页面级组件规范

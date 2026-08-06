@@ -59,11 +59,20 @@ def run(cmd: list[str], cwd: Path | None = None, **kw) -> subprocess.CompletedPr
 
 
 def find_conda() -> str | None:
-    """定位 conda 可执行文件。"""
+    """定位 conda 可执行文件（跨平台）。"""
     c = shutil.which("conda")
     if c:
         return c
+    # Linux/macOS 常见位置
     for cand in (
+        Path.home() / "miniconda3" / "bin" / "conda",
+        Path.home() / "anaconda3" / "bin" / "conda",
+        Path.home() / "miniforge3" / "bin" / "conda",
+        Path("/opt/miniconda3/bin/conda"),
+        Path("/opt/anaconda3/bin/conda"),
+        Path("/opt/conda/bin/conda"),
+        Path("/usr/local/miniconda3/bin/conda"),
+        # Windows 常见位置
         Path.home() / "miniconda3" / "Scripts" / "conda.exe",
         Path.home() / "anaconda3" / "Scripts" / "conda.exe",
         Path.home() / "AppData" / "Local" / "miniconda3" / "Scripts" / "conda.exe",

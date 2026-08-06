@@ -1,0 +1,28 @@
+# ============================================================
+# RehabFlow systemd 服务 — 前端（Next.js 生产模式）
+# 前置：已在 frontend/ 执行 npm ci && npm run build
+# ============================================================
+[Unit]
+Description=RehabFlow Frontend (Next.js)
+After=network.target
+Requires=rehabflow-backend.service
+
+[Service]
+Type=simple
+User=rehabflow
+Group=rehabflow
+WorkingDirectory=/opt/RehabFlow/frontend
+# Next.js 生产服务（监听 127.0.0.1，由 nginx 反代对外）
+ExecStart=/usr/bin/node node_modules/.bin/next start -H 127.0.0.1 -p 3000
+Restart=always
+RestartSec=3
+# 内存上限（可选，按服务器内存调整）
+Environment=NODE_ENV=production
+
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/opt/RehabFlow/frontend/.next
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
