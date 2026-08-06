@@ -131,7 +131,73 @@ docker compose down -v            # 停止并删除数据（危险！）
 
 ---
 
-## 环境变量（两种方案共用 .env）
+## 方案 C：AutoDL/seetacloud 容器部署（一键脚本）
+
+AutoDL（含 seetacloud/西云）GPU 容器**只开放固定端口映射**（控制台「自定义服务」），典型映射：
+
+| 实例内端口 | 公网地址 |
+| :--- | :--- |
+| `6006` | `https://u<uid>-<实例>.westc.seetacloud.com:8443`（后端 API） |
+| `6008` | `https://uu<uid>-<实例>.westc.seetacloud.com:8443`（前端页面） |
+
+> 端口号以控制台实际显示为准，可用环境变量 `BACKEND_PORT` / `FRONTEND_PORT` 覆盖。
+
+### 一键部署
+
+```bash
+# 在 AutoDL 实例的 Jupyter 终端 / SSH 中执行
+curl -sL https://raw.githubusercontent.com/flichote/RehabFlow/main/deploy/remote_install.sh -o rf_install.sh
+bash rf_install.sh
+```
+
+脚本自动完成（**部署完即自动启动前后端**）：
+
+1. 环境探测（conda python 优先，避免系统 python 无 pip）
+2. 克隆/更新仓库
+3. 后端依赖 + 数据库初始化
+4. 前端构建——**自动检测 AutoDL 数据盘（`/root/autodl-tmp`，ext4 独立卷）并在其上构建**，绕开 overlayfs 的 SIGBUS/Bus error（Docker overlay2 mmap 白洞问题）
+5. 启动服务：后端 `:6006`（nohup）+ 前端 `:6008`（nohup，构建时注入 `BACKEND_URL=http://127.0.0.1:6006`，经 Next rewrites 同源代理访问后端，无跨域）
+6. 自动验证：healthz / 前端 HTTP / 登录 API（经前端代理）
+
+### 公网访问
+
+```
+前端页面:  https://uu<uid>-<实例>.westc.seetacloud.com:8443
+后端 API:  https://u<uid>-<实例>.westc.seetacloud.com:8443  （/docs 为 Swagger 文档）
+演示账号:  admin / admin123
+```
+
+### AutoDL 已知坑（脚本已处理）
+
+- **Bus error (core dumped)**：next build 在 overlayfs（`/` 根分区）上 mmap 崩溃 → 脚本自动在数据盘 `/root/autodl-tmp`（ext4）构建
+- **系统 python 无 pip**（`No module named pip` / `No module named sqlalchemy`）→ 脚本优先 `/root/miniconda3/bin/python`
+- **npm 国外源慢** → 脚本自动切 `https://registry.npmmirror.com`
+- **无 systemd/nginx** → 脚本用 nohup 后台启动，无需 root 特权操作
+
+### 手动部署（不跑脚本，逐步控制）
+
+```bash
+# 1. 后端（conda python）
+CONDA_PY=/root/miniconda3/bin/python
+cd /root/RehabFlow/backend
+$CONDA_PY -m pip install -r requirements.txt
+$CONDA_PY -m app.db.init_db
+
+# 2. 前端（必须在数据盘构建！）
+cp -r /root/RehabFlow/frontend /root/autodl-tmp/rehabflow-frontend
+cd /root/autodl-tmp/rehabflow-frontend
+npm config set registry https://registry.npmmirror.com
+npm install
+BACKEND_URL=http://127.0.0.1:6006 npm run build   # 代理指向后端 6006
+
+# 3. 启动（nohup 后台）
+cd /root/RehabFlow/backend
+nohup $CONDA_PY -m uvicorn app.main:app --host 0.0.0.0 --port 6006 --workers 2 > /root/RehabFlow/logs/backend.log 2>&1 &
+cd /root/autodl-tmp/rehabflow-frontend
+nohup node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 6008 > /root/RehabFlow/logs/frontend.log 2>&1 &
+```
+
+---
 
 | 变量 | 默认值 | 说明 |
 | :--- | :--- | :--- |

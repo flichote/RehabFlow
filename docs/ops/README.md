@@ -7,7 +7,7 @@
 
 | 文档 | 说明 | 状态 |
 | :--- | :--- | :--- |
-| `deployment.md` | **Linux 部署全流程**：方案 A 常规（systemd+nginx+conda 一键脚本）/ 方案 B Docker Compose；PG 迁移、安全加固 | ✅ |
+| `deployment.md` | **Linux 部署全流程**：方案 A 常规（systemd+nginx+conda 一键脚本）/ 方案 B Docker Compose / **方案 C AutoDL 容器**（端口映射 + 数据盘绕 SIGBUS）；PG 迁移、安全加固 | ✅ |
 | `monitoring.md` | 日志、健康检查、告警监控方案 | 规划中 |
 | `env.md` | 环境变量清单（已并入 deployment.md §环境变量 + `.env.example`） | ✅ |
 
@@ -21,6 +21,10 @@ sudo bash deploy/install_linux.sh
 # 方案 B：Docker Compose
 cp .env.example .env && vim .env        # 改 SECRET_KEY！
 docker compose up -d --build
+
+# 方案 C：AutoDL/seetacloud 容器（Jupyter 终端执行，部署完自动启动前后端）
+curl -sL https://raw.githubusercontent.com/flichote/RehabFlow/main/deploy/remote_install.sh -o rf_install.sh
+bash rf_install.sh
 # 访问 http://<服务器IP>/   健康检查 /healthz
 ```
 
